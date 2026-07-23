@@ -1,25 +1,42 @@
 import { useState, useEffect, useRef } from "react";
 
-// ── DESIGN TOKENS — Light DB Blue Theme ──────────────────────────────────────
+// ── DESIGN TOKENS — Official DB EU Brand Palette ─────────────────────────────
+// Source: Deutsche Bank Unternehmensbank brand document (Finanzforum 2026)
+// Primary blues:  Deep Blue · Dark Blue · Mid Blue · Bright Blue · Light Blue · Ice Blue
+// Accent colours: Turquoise · Petrol · Rubine Red · Bright Red · Autumn Green
 const C = {
-  bg:       "#EEF4FB",   // page background: cool blue-grey wash
-  bgCard:   "#FFFFFF",   // card surface: clean white
-  bgMid:    "#DAE8F5",   // subtle inner panels: muted blue
-  navy:     "#003E7E",   // DB primary navy
-  navyLight:"#0A4F9E",   // hover navy
-  gold:     "#B07D1F",   // DB gold — darkened for light bg contrast
-  goldLight:"#C8922A",   // gold accent
-  teal:     "#006B7A",   // teal — darkened for light bg
-  tealLight:"#00869A",
-  green:    "#1A6B3C",   // green — darkened for light bg
-  red:      "#B91C1C",   // red — darkened for light bg
-  amber:    "#B45309",   // amber — darkened for light bg
-  purple:   "#6D28D9",
-  white:    "#FFFFFF",
-  offWhite: "#F0F6FF",
-  muted:    "#64748B",
-  border:   "#BFCFE3",   // light blue-grey border
-  text:     "#1E3A5F",   // dark navy text — readable on white
+  // Page surfaces — DB Ice Blue + Light Blue family
+  bg:        "#ECF4FC",   // Ice Blue — page wash
+  bgCard:    "#FFFFFF",   // white card surface
+  bgMid:     "#CDE8F8",   // Light Blue tint — inner panels / hover rows
+
+  // DB Primary Blues (RGB converted to hex)
+  deepBlue:  "#1E2A78",   // Deep Blue  30|42|120
+  darkBlue:  "#16184E",   // Dark Blue  22|24|78
+  midBlue:   "#0069B1",   // Mid Blue   0|105|177
+  brightBlue:"#34A6DC",   // Bright Blue 52|166|220
+  lightBlue: "#CDEBFC",   // Light Blue 205|235|252
+  iceBlue:   "#ECF4FC",   // Ice Blue   236|244|252
+
+  // Aliases used throughout the component
+  navy:      "#1E2A78",   // = deepBlue — sidebar, headers
+  navyLight: "#0069B1",   // = midBlue — hover, links
+  gold:      "#0069B1",   // replaced with DB Mid Blue for primary actions
+  goldLight: "#34A6DC",   // = brightBlue — secondary actions, accents
+
+  // DB Accent colours
+  teal:      "#24778D",   // Petrol     36|119|141
+  tealLight: "#3BB8B8",   // Turquoise  59|184|184
+  green:     "#1A6B3C",   // adjusted — DB has Summer/Spring greens; darkened for text
+  red:       "#D4065D",   // Rubine Red 212|6|93
+  redBright: "#E7001D",   // Bright Red 231|0|29
+  amber:     "#F28011",   // Sundown Orange 242|128|17
+
+  white:     "#FFFFFF",
+  offWhite:  "#ECF4FC",   // iceBlue
+  muted:     "#5A6E85",   // blue-toned grey — legible on white
+  border:    "#B8D6EE",   // light blue-grey border
+  text:      "#16184E",   // darkBlue — highest contrast on white
 };
 
 // ── MOCK DATA ─────────────────────────────────────────────────────────────────
@@ -311,7 +328,7 @@ function Step1({ onSelect }) {
         <button
           onClick={() => handleLookup()}
           style={{
-            background: C.navy, color: "#FFFFFF", border: "none", borderRadius: 6,
+            background: C.deepBlue, color: "#FFFFFF", border: "none", borderRadius: 6,
             padding: "12px 28px", fontSize: 13, fontWeight: 800, cursor: "pointer",
             fontFamily: "monospace", letterSpacing: 1, whiteSpace: "nowrap",
           }}
@@ -370,12 +387,12 @@ function Step2({ app }) {
             <Badge color={C.red}>HIGH RISK AI</Badge>
             <Badge color={classColor}>{app.criticality}</Badge>
           </div>
-          <h2 style={{ color: "#FFFFFF", fontSize: 22, fontWeight: 800, margin: "0 0 4px" }}>{app.name}</h2>
-          <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 12 }}>{app.owner} · {app.bu}</div>
+          <h2 style={{ color: C.lightBlue, fontSize: 22, fontWeight: 800, margin: "0 0 4px" }}>{app.name}</h2>
+          <div style={{ color: "rgba(205,235,252,0.7)", fontSize: 12 }}>{app.owner} · {app.bu}</div>
         </div>
         <div style={{ textAlign: "right" }}>
-          <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 10, fontFamily: "monospace" }}>AI ACT CLASSIFICATION</div>
-          <div style={{ color: "#FCA5A5", fontWeight: 800, fontSize: 13, fontFamily: "monospace" }}>Annex III — High Risk</div>
+          <div style={{ color: "rgba(205,235,252,0.6)", fontSize: 10, fontFamily: "monospace" }}>AI ACT CLASSIFICATION</div>
+          <div style={{ color: C.amber, fontWeight: 800, fontSize: 13, fontFamily: "monospace" }}>Annex III — High Risk</div>
         </div>
       </div>
 
@@ -480,9 +497,9 @@ function Step3({ app }) {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 40, gap: 4 }}>
-          <div style={{ background: C.navy, border: `2px solid ${C.goldLight}`, borderRadius: 8, padding: "14px 10px", textAlign: "center", minWidth: 120 }}>
-            <div style={{ color: C.goldLight, fontSize: 9, fontFamily: "monospace", fontWeight: 700, marginBottom: 4 }}>DB APP</div>
-            <div style={{ color: "#FFFFFF", fontWeight: 800, fontSize: 11 }}>{app.id}</div>
+          <div style={{ background: C.deepBlue, border: `2px solid ${C.brightBlue}`, borderRadius: 8, padding: "14px 10px", textAlign: "center", minWidth: 120 }}>
+            <div style={{ color: C.brightBlue, fontSize: 9, fontFamily: "monospace", fontWeight: 700, marginBottom: 4 }}>DB APP</div>
+            <div style={{ color: C.lightBlue, fontWeight: 800, fontSize: 11 }}>{app.id}</div>
           </div>
           <div style={{ color: C.muted, fontSize: 18 }}>⬌</div>
         </div>
@@ -840,10 +857,10 @@ export default function ComplianceWorkstation() {
   ];
 
   const stepColor = (s) => {
-    if (s.n === activeStep) return C.gold;
-    if (s.done) return C.green;
-    if (!s.active) return C.border;
-    return C.teal;
+    if (s.n === activeStep) return C.brightBlue;
+    if (s.done) return C.tealLight;
+    if (!s.active) return "rgba(255,255,255,0.2)";
+    return C.lightBlue;
   };
 
   return (
@@ -862,13 +879,13 @@ export default function ComplianceWorkstation() {
         {/* Brand */}
         <div style={{ padding: "0 20px 24px", borderBottom: "1px solid rgba(255,255,255,0.15)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <div style={{ background: C.goldLight, color: C.navy, fontWeight: 900, fontSize: 12, padding: "2px 7px", borderRadius: 3, fontFamily: "monospace" }}>db</div>
+            <div style={{ background: C.brightBlue, color: C.darkBlue, fontWeight: 900, fontSize: 12, padding: "2px 7px", borderRadius: 3, fontFamily: "monospace" }}>db</div>
             <span style={{ color: "#FFFFFF", fontWeight: 800, fontSize: 13 }}>RegSentinel</span>
           </div>
-          <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 9, fontFamily: "monospace", letterSpacing: 2 }}>COMPLIANCE WORKSTATION</div>
+          <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 9, fontFamily: "monospace", letterSpacing: 2 }}>COMPLIANCE WORKSTATION</div>
           <div style={{ marginTop: 8, display: "flex", gap: 5 }}>
             <Tag color={C.tealLight}>DORA</Tag>
-            <Tag color={C.goldLight}>AI ACT</Tag>
+            <Tag color={C.brightBlue}>AI ACT</Tag>
           </div>
         </div>
 
@@ -890,7 +907,7 @@ export default function ComplianceWorkstation() {
               >
                 <div style={{
                   width: 26, height: 26, borderRadius: "50%", flexShrink: 0,
-                  background: activeStep === s.n ? C.gold : s.done ? C.green : C.bgMid,
+                  background: activeStep === s.n ? C.brightBlue : s.done ? C.green : "rgba(255,255,255,0.1)",
                   border: `2px solid ${stepColor(s)}`,
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: 10, fontWeight: 800, fontFamily: "monospace",
@@ -920,7 +937,7 @@ export default function ComplianceWorkstation() {
             {incident && (
               <>
                 <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 9, fontFamily: "monospace", letterSpacing: 2, margin: "8px 0 4px" }}>INCIDENT</div>
-                <div style={{ color: "#FCA5A5", fontFamily: "monospace", fontSize: 10 }}>{incident.id}</div>
+                <div style={{ color: C.amber, fontFamily: "monospace", fontSize: 10 }}>{incident.id}</div>
               </>
             )}
           </div>
