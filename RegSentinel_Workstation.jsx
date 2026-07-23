@@ -815,59 +815,67 @@ function Step4({app,onSelect}){
   );
 }
 
-// ── STEP 5: REGULATORY ANALYSIS ───────────────────────────────────────────────
+// ── STEP 5: REGULATORY ANALYSIS ─────────────────────────────────────────────
+// Split into 3 small sequential API calls to prevent JSON truncation.
+// Each call returns a focused compact JSON well within token limits.
 function Step5({app,incident}){
   const [analysis,setAnalysis]=useState(null);
   const [loading,setLoading]=useState(false);
+  const [loadingMsg,setLoadingMsg]=useState("");
   const [error,setError]=useState("");
   const hasRun=useRef(false);
 
-  const SYSTEM=`You are RegSentinel AI, Deutsche Bank's regulatory compliance analyser for DORA and the EU AI Act.
-Given an application profile and a ServiceNow incident, produce a structured regulatory analysis. Respond ONLY with this JSON (no markdown, no preamble):
-{
-  "executiveSummary": "2-3 sentence plain-English summary of the regulatory exposure this incident creates",
-  "doraAnalysis": {
-    "inScope": true,
-    "primaryArticles": ["Art. XX — Title"],
-    "classification": "Major ICT-related incident",
-    "reportingObligation": "Specific reporting obligation and timeline e.g. Initial notification to BaFin within 4 hours",
-    "gapIdentified": "Key DORA compliance gap this incident reveals",
-    "remediationAction": "Specific DORA-required remediation step"
-  },
-  "aiActAnalysis": {
-    "inScope": true,
-    "primaryArticles": ["Art. XX — Title"],
-    "riskCategory": "High",
-    "obligationTriggered": "Which specific AI Act obligation does this incident trigger",
-    "gapIdentified": "Key AI Act compliance gap this incident reveals",
-    "remediationAction": "Specific AI Act-required remediation step"
-  },
-  "combinedRisk": {
-    "overlapDetected": true,
-    "intersectionExplanation": "If both frameworks apply explain the intersection",
-    "overallSeverity": "CRITICAL",
-    "unifiedRemediationPlan": [
-      {"priority":1,"action":"action text","owner":"role","framework":"BOTH","deadline":"timeframe"},
-      {"priority":2,"action":"action text","owner":"role","framework":"DORA","deadline":"timeframe"},
-      {"priority":3,"action":"action text","owner":"role","framework":"AI Act","deadline":"timeframe"},
-      {"priority":4,"action":"action text","owner":"role","framework":"BOTH","deadline":"timeframe"}
-    ]
-  },
-  "regulatoryTimeline": [
-    {"milestone":"milestone name","deadline":"timeframe from incident","framework":"DORA","status":"DUE"}
-  ],
-  "potentialFinancialExposure": "Describe the regulatory fine exposure with specific reference to DORA Art. 50 or AI Act penalty provisions"
-}`;
+  const ctx=`App: ${app.name} (${app.id}) | ${app.classification} | BU: ${app.bu} | AI: ${(app.functional.aiComponents.join(", "))||"None"}
+Incident: ${incident.id} | ${incident.severity} | ${incident.category} | "${incident.title}"
+Duration: ${incident.duration} | Affected: ${incident.affectedUsers} users | Date: ${incident.date} | Status: ${incident.status}`;
 
   useEffect(()=>{
     if(hasRun.current) return;
     hasRun.current=true;
     setLoading(true);
-    const msg=`APPLICATION: ${app.name} (${app.id})\nClassification: ${app.classification}\nBusiness Unit: ${app.bu}\nAI Components: ${app.functional.aiComponents.join(", ")||"None"}\nInfrastructure: ${app.infra.hosting}\n\nINCIDENT:\nID: ${incident.id}\nSeverity: ${incident.severity}\nCategory: ${incident.category}\nTitle: ${incident.title}\nDuration: ${incident.duration}\nAffected Users: ${incident.affectedUsers}\nDate: ${incident.date}\nStatus: ${incident.status}\nDORA Flagged: ${incident.doraFlag}\nAI Act Flagged: ${incident.aiActFlag}\n\nProvide a detailed DORA and EU AI Act regulatory analysis.`;
-    callClaude(SYSTEM,msg)
-      .then(raw=>{ try{setAnalysis(extractJSON(raw));}catch(e){setError("Parse failed: "+e.message+". Raw: "+raw.slice(0,150));} })
-      .catch(e=>setError("API error: "+e.message))
-      .finally(()=>setLoading(false));
+
+    async function run(){
+      try{
+        // ── Call 1: DORA ─────────────────────────────────────────────────
+        setLoadingMsg("Analysing against DORA (Art. 5–44)…");
+        const r1 = await callClaude(
+          `You are a DORA compliance expert. Respond ONLY with this exact JSON structure, all string values max 100 chars:
+{"inScope":true,"articles":["Art.17"],"classification":"Major ICT-related incident","reporting":"Initial notification to BaFin within 4 hours","gap":"Brief gap description","action":"Brief remediation action","severity":"CRITICAL"}
+Use false for inScope if DORA is not triggered. No markdown, no extra fields.`,
+          ctx
+        );
+        const dora = extractJSON(r1);
+
+        // ── Call 2: AI Act ───────────────────────────────────────────────
+        setLoadingMsg("Analysing against EU AI Act (Art. 6–62)…");
+        const r2 = await callClaude(
+          `You are an EU AI Act compliance expert. Respond ONLY with this exact JSON structure, all string values max 100 chars:
+{"inScope":true,"articles":["Art.12"],"riskCategory":"High","obligation":"Brief obligation triggered","gap":"Brief gap description","action":"Brief remediation action"}
+Use false for inScope if AI Act is not triggered. No markdown, no extra fields.`,
+          ctx
+        );
+        const aiact = extractJSON(r2);
+
+        // ── Call 3: Combined ─────────────────────────────────────────────
+        setLoadingMsg("Generating unified compliance assessment…");
+        const r3 = await callClaude(
+          `You are a regulatory compliance analyst. Respond ONLY with this exact JSON structure, all string values max 90 chars:
+{"overlapDetected":true,"severity":"CRITICAL","intersection":"One sentence on dual-framework conflict","exposure":"Fine exposure: DORA up to 2% global turnover + AI Act up to 3%","actions":[{"p":1,"a":"Immediate action","fw":"BOTH","owner":"CISO","by":"24h"},{"p":2,"a":"DORA action","fw":"DORA","owner":"IT Risk","by":"72h"},{"p":3,"a":"AI Act action","fw":"AI Act","owner":"AI Officer","by":"1 week"},{"p":4,"a":"Review action","fw":"BOTH","owner":"Compliance","by":"1 month"}],"timeline":[{"m":"BaFin initial report","d":"4h from incident","fw":"DORA","s":"DUE"},{"m":"Audit log review","d":"48h","fw":"AI Act","s":"DUE"},{"m":"Root cause report","d":"1 month","fw":"BOTH","s":"UPCOMING"}]}
+No markdown, no extra fields.`,
+          `${ctx}
+DORA: ${dora.inScope?"in scope — "+dora.classification:"not in scope"}
+AI Act: ${aiact.inScope?"in scope — "+aiact.riskCategory+" risk":"not in scope"}`
+        );
+        const combined = extractJSON(r3);
+
+        setAnalysis({dora, aiact, combined});
+      }catch(e){
+        setError("Analysis failed: "+e.message+" — Please click 'Retry Analysis' to try again.");
+      }finally{
+        setLoading(false);
+      }
+    }
+    run();
   },[incident.id]);
 
   const oc={CRITICAL:C.accent,HIGH:C.midBlue,MEDIUM:C.muted,LOW:C.border};
@@ -877,6 +885,7 @@ Given an application profile and a ServiceNow incident, produce a structured reg
 
   return (
     <div>
+      {/* Incident header */}
       <div style={{padding:"14px 18px",background:C.bgMid,borderRadius:8,border:`1px solid ${C.border}`,marginBottom:20}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
           <Badge color={sv[incident.severity]||C.muted}>{incident.severity}</Badge>
@@ -888,14 +897,42 @@ Given an application profile and a ServiceNow incident, produce a structured reg
         <div style={{color:C.muted,fontSize:11,fontFamily:"monospace"}}>{app.name} · {incident.date} · Duration: {incident.duration} · Affected: {incident.affectedUsers.toLocaleString()} users</div>
       </div>
 
-      {loading&&<div style={{padding:48,textAlign:"center"}}><Spinner size={28}/><div style={{color:C.muted,fontFamily:"monospace",fontSize:12,marginTop:16}}>RegSentinel AI is analysing this incident against DORA Art. 5–44 and EU AI Act Art. 6–14…</div></div>}
-      {error&&<Card accent={C.accent}><div style={{color:C.accent,fontSize:12,fontFamily:"monospace"}}>{error}</div></Card>}
+      {/* Loading state with step progress */}
+      {loading&&(
+        <div style={{padding:48,textAlign:"center"}}>
+          <Spinner size={28} color={C.deepBlue}/>
+          <div style={{color:C.deepBlue,fontWeight:700,fontSize:15,marginTop:16,marginBottom:8}}>Running Regulatory Analysis…</div>
+          <div style={{color:C.muted,fontFamily:"monospace",fontSize:12,marginBottom:24}}>{loadingMsg}</div>
+          <div style={{display:"flex",justifyContent:"center",gap:8}}>
+            {[
+              {label:"DORA Analysis",  active:loadingMsg.includes("DORA")},
+              {label:"AI Act Analysis",active:loadingMsg.includes("AI Act")},
+              {label:"Combined Report",active:loadingMsg.includes("unified")},
+            ].map((s,i)=>(
+              <div key={i} style={{padding:"6px 16px",borderRadius:20,background:s.active?C.deepBlue:C.bgMid,color:s.active?C.white:C.muted,fontSize:11,fontFamily:"monospace",border:`1px solid ${s.active?C.deepBlue:C.border}`,transition:"all 0.3s"}}>{s.label}</div>
+            ))}
+          </div>
+        </div>
+      )}
 
+      {/* Error state */}
+      {error&&!loading&&(
+        <Card accent={C.accent} style={{textAlign:"center",padding:28}}>
+          <div style={{fontSize:24,marginBottom:12}}>⚠️</div>
+          <div style={{color:C.accent,fontWeight:700,fontSize:14,marginBottom:8}}>Analysis Error</div>
+          <div style={{color:C.text,fontSize:12,lineHeight:1.7,marginBottom:16}}>{error}</div>
+          <button onClick={()=>{setError("");hasRun.current=false;setAnalysis(null);setLoading(true);setTimeout(()=>{hasRun.current=false;},0);window.location.reload();}}
+            style={{background:C.deepBlue,color:C.white,border:"none",borderRadius:6,padding:"9px 24px",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+            Retry Analysis
+          </button>
+        </Card>
+      )}
+
+      {/* Results */}
       {analysis&&!loading&&(
         <div>
-          {/* ── COMPLIANCE SUMMARY — structured readable points ── */}
+          {/* Compliance Summary */}
           <div style={{marginBottom:20,background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:10,overflow:"hidden"}}>
-            {/* Summary header bar */}
             <div style={{background:C.deepBlue,padding:"14px 20px",display:"flex",alignItems:"center",gap:14}}>
               <div style={{flex:1}}>
                 <div style={{color:"rgba(255,255,255,0.5)",fontSize:9,fontFamily:"monospace",letterSpacing:3,marginBottom:3}}>COMPLIANCE SUMMARY</div>
@@ -904,115 +941,120 @@ Given an application profile and a ServiceNow incident, produce a structured reg
               <div style={{display:"flex",gap:8,alignItems:"center"}}>
                 <div style={{background:"rgba(255,255,255,0.12)",borderRadius:6,padding:"6px 14px",textAlign:"center"}}>
                   <div style={{color:"rgba(255,255,255,0.5)",fontSize:8,fontFamily:"monospace",letterSpacing:1}}>SEVERITY</div>
-                  <div style={{color:C.white,fontWeight:800,fontSize:14}}>{analysis.combinedRisk?.overallSeverity||"—"}</div>
+                  <div style={{color:C.white,fontWeight:800,fontSize:14}}>{analysis.combined?.severity||analysis.dora?.severity||"HIGH"}</div>
                 </div>
-                {analysis.combinedRisk?.overlapDetected&&(
-                  <div style={{background:"rgba(0,105,177,0.35)",border:"1px solid rgba(58,143,204,0.7)",borderRadius:6,padding:"6px 12px",color:C.white,fontSize:10,fontWeight:700,fontFamily:"monospace"}}>⚡ DUAL FRAMEWORK</div>
-                )}
+                {analysis.combined?.overlapDetected&&<div style={{background:"rgba(0,105,177,0.35)",border:"1px solid rgba(58,143,204,0.7)",borderRadius:6,padding:"6px 12px",color:C.white,fontSize:10,fontWeight:700,fontFamily:"monospace"}}>⚡ DUAL FRAMEWORK</div>}
               </div>
             </div>
-            {/* Key findings as bullet points */}
             <div style={{padding:"18px 22px"}}>
-              <div style={{marginBottom:4,color:C.deepBlue,fontSize:10,fontFamily:"monospace",fontWeight:700,letterSpacing:2}}>KEY FINDINGS</div>
-              {analysis.executiveSummary && analysis.executiveSummary.split(/(?<=[.!?])\s+/).filter(s=>s.trim().length>10).map((point,i)=>(
-                <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"10px 0",borderBottom:i<analysis.executiveSummary.split(/(?<=[.!?])\s+/).filter(s=>s.trim().length>10).length-1?`1px solid ${C.border}`:"none"}}>
-                  <div style={{width:22,height:22,borderRadius:"50%",background:C.deepBlue,color:C.white,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,flexShrink:0,marginTop:1}}>{i+1}</div>
-                  <div style={{color:C.text,fontSize:13,lineHeight:1.65}}>{point.trim()}</div>
+              <div style={{marginBottom:10,color:C.deepBlue,fontSize:10,fontFamily:"monospace",fontWeight:700,letterSpacing:2}}>KEY FINDINGS</div>
+              {[
+                analysis.dora?.inScope    && `DORA: ${analysis.dora.classification||"Incident in scope"} — ${analysis.dora.reporting||"Reporting obligation triggered"}`,
+                analysis.aiact?.inScope   && `EU AI Act: ${analysis.aiact.riskCategory||"High"}-risk AI system — ${analysis.aiact.obligation||"Compliance obligations apply"}`,
+                analysis.combined?.overlapDetected && `Dual-Framework Overlap: ${analysis.combined.intersection||"Both DORA and EU AI Act obligations triggered simultaneously"}`,
+                analysis.dora?.inScope    && `DORA Compliance Gap: ${analysis.dora.gap||""}`,
+                analysis.aiact?.inScope   && `AI Act Compliance Gap: ${analysis.aiact.gap||""}`,
+                `Financial Exposure: ${analysis.combined?.exposure||"Regulatory fines applicable under both frameworks"}`,
+              ].filter(Boolean).map((point,i)=>(
+                <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"10px 0",borderBottom:`1px solid ${C.border}`}}>
+                  <div style={{width:22,height:22,borderRadius:"50%",background:i===2?C.accent:C.deepBlue,color:C.white,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,flexShrink:0,marginTop:1}}>{i+1}</div>
+                  <div style={{color:C.text,fontSize:13,lineHeight:1.65}}>{point}</div>
                 </div>
               ))}
             </div>
           </div>
+
+          {/* DORA + AI Act panels */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
-            <Card accent={analysis.doraAnalysis?.inScope?C.midBlue:C.border}>
+            <Card accent={analysis.dora?.inScope?C.midBlue:C.border}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
                 <Badge color={C.midBlue}>DORA</Badge>
                 <span style={{color:C.text,fontWeight:700,fontSize:13}}>Digital Operational Resilience Act</span>
-                <span style={{marginLeft:"auto",fontSize:16}}>{analysis.doraAnalysis?.inScope?"✅":"⬜"}</span>
+                <span style={{marginLeft:"auto",fontSize:16}}>{analysis.dora?.inScope?"✅":"⬜"}</span>
               </div>
-              {analysis.doraAnalysis?.inScope?(<>
-                <InfoRow label="Classification" value={analysis.doraAnalysis.classification}/>
-                <InfoRow label="Articles" value={analysis.doraAnalysis.primaryArticles?.join(", ")}/>
-                <InfoRow label="Reporting" value={analysis.doraAnalysis.reportingObligation}/>
+              {analysis.dora?.inScope?(<>
+                <InfoRow label="Classification"   value={analysis.dora.classification}/>
+                <InfoRow label="Articles"         value={analysis.dora.articles?.join(", ")}/>
+                <InfoRow label="Reporting"        value={analysis.dora.reporting}/>
                 <div style={{marginTop:10,padding:"8px 12px",background:C.bgMid,border:`1px solid ${C.border}`,borderRadius:5}}>
                   <div style={{color:C.accent,fontSize:9,fontFamily:"monospace",marginBottom:3}}>GAP IDENTIFIED</div>
-                  <div style={{color:C.text,fontSize:11}}>{analysis.doraAnalysis.gapIdentified}</div>
+                  <div style={{color:C.text,fontSize:11}}>{analysis.dora.gap}</div>
                 </div>
                 <div style={{marginTop:8,padding:"8px 12px",background:C.bgMid,border:`1px solid ${C.border}`,borderRadius:5}}>
                   <div style={{color:C.midBlue,fontSize:9,fontFamily:"monospace",marginBottom:3}}>REQUIRED ACTION</div>
-                  <div style={{color:C.text,fontSize:11}}>{analysis.doraAnalysis.remediationAction}</div>
+                  <div style={{color:C.text,fontSize:11}}>{analysis.dora.action}</div>
                 </div>
               </>):(<div style={{color:C.muted,fontSize:12}}>This incident does not trigger DORA reporting obligations.</div>)}
             </Card>
-            <Card accent={analysis.aiActAnalysis?.inScope?C.deepBlue:C.border}>
+            <Card accent={analysis.aiact?.inScope?C.deepBlue:C.border}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
                 <Badge color={C.deepBlue}>EU AI ACT</Badge>
                 <span style={{color:C.text,fontWeight:700,fontSize:13}}>Artificial Intelligence Act</span>
-                <span style={{marginLeft:"auto",fontSize:16}}>{analysis.aiActAnalysis?.inScope?"✅":"⬜"}</span>
+                <span style={{marginLeft:"auto",fontSize:16}}>{analysis.aiact?.inScope?"✅":"⬜"}</span>
               </div>
-              {analysis.aiActAnalysis?.inScope?(<>
-                <InfoRow label="Risk Category" value={analysis.aiActAnalysis.riskCategory}/>
-                <InfoRow label="Articles" value={analysis.aiActAnalysis.primaryArticles?.join(", ")}/>
-                <InfoRow label="Obligation" value={analysis.aiActAnalysis.obligationTriggered}/>
+              {analysis.aiact?.inScope?(<>
+                <InfoRow label="Risk Category"    value={analysis.aiact.riskCategory}/>
+                <InfoRow label="Articles"         value={analysis.aiact.articles?.join(", ")}/>
+                <InfoRow label="Obligation"       value={analysis.aiact.obligation}/>
                 <div style={{marginTop:10,padding:"8px 12px",background:C.bgMid,border:`1px solid ${C.border}`,borderRadius:5}}>
                   <div style={{color:C.accent,fontSize:9,fontFamily:"monospace",marginBottom:3}}>GAP IDENTIFIED</div>
-                  <div style={{color:C.text,fontSize:11}}>{analysis.aiActAnalysis.gapIdentified}</div>
+                  <div style={{color:C.text,fontSize:11}}>{analysis.aiact.gap}</div>
                 </div>
                 <div style={{marginTop:8,padding:"8px 12px",background:C.bgMid,border:`1px solid ${C.border}`,borderRadius:5}}>
                   <div style={{color:C.deepBlue,fontSize:9,fontFamily:"monospace",marginBottom:3}}>REQUIRED ACTION</div>
-                  <div style={{color:C.text,fontSize:11}}>{analysis.aiActAnalysis.remediationAction}</div>
+                  <div style={{color:C.text,fontSize:11}}>{analysis.aiact.action}</div>
                 </div>
               </>):(<div style={{color:C.muted,fontSize:12}}>This incident does not trigger EU AI Act obligations.</div>)}
             </Card>
           </div>
-          {analysis.combinedRisk?.overlapDetected&&(
+
+          {/* Dual-framework overlap */}
+          {analysis.combined?.overlapDetected&&(
             <Card style={{marginBottom:14}} accent={C.accent}>
               <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
                 <span style={{fontSize:18}}>⚡</span>
                 <div>
                   <div style={{color:C.accent,fontSize:10,fontFamily:"monospace",fontWeight:700,marginBottom:4}}>DUAL-FRAMEWORK INTERSECTION</div>
-                  {analysis.combinedRisk.intersectionExplanation && analysis.combinedRisk.intersectionExplanation.split(/(?<=[.!?])\s+/).filter(s=>s.trim().length>8).map((pt,i)=>(
-                  <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:7}}>
-                    <span style={{color:C.accent,fontWeight:800,flexShrink:0}}>›</span>
-                    <span style={{color:C.text,fontSize:12,lineHeight:1.65}}>{pt.trim()}</span>
-                  </div>
-                ))}
+                  <p style={{color:C.text,fontSize:12,lineHeight:1.7,margin:0}}>{analysis.combined.intersection}</p>
                 </div>
               </div>
             </Card>
           )}
+
+          {/* Remediation plan */}
           <Card style={{marginBottom:14}}>
             <SLabel>Unified Remediation Plan</SLabel>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {analysis.combinedRisk?.unifiedRemediationPlan?.map((item,i)=>(
-                <div key={i} style={{display:"grid",gridTemplateColumns:"32px 1fr 120px 100px 100px",alignItems:"center",gap:10,padding:"10px 14px",background:C.bgMid,borderRadius:6,border:`1px solid ${C.border}`}}>
-                  <div style={{width:28,height:28,borderRadius:"50%",background:fc[item.framework]||C.midBlue,display:"flex",alignItems:"center",justifyContent:"center",color:C.white,fontWeight:800,fontSize:12,fontFamily:"monospace",flexShrink:0}}>{item.priority}</div>
-                  <div style={{color:C.text,fontSize:12}}>{item.action}</div>
+              {analysis.combined?.actions?.map((item,i)=>(
+                <div key={i} style={{display:"grid",gridTemplateColumns:"32px 1fr 110px 90px 90px",alignItems:"center",gap:10,padding:"10px 14px",background:C.bgMid,borderRadius:6,border:`1px solid ${C.border}`}}>
+                  <div style={{width:28,height:28,borderRadius:"50%",background:fc[item.fw]||C.midBlue,display:"flex",alignItems:"center",justifyContent:"center",color:C.white,fontWeight:800,fontSize:12,fontFamily:"monospace",flexShrink:0}}>{item.p}</div>
+                  <div style={{color:C.text,fontSize:12}}>{item.a}</div>
                   <div style={{color:C.muted,fontSize:11,textAlign:"right"}}>{item.owner}</div>
-                  <Badge color={fc[item.framework]||C.midBlue}>{item.framework}</Badge>
-                  <div style={{color:C.deepBlue,fontSize:11,fontFamily:"monospace",textAlign:"right"}}>{item.deadline}</div>
+                  <Badge color={fc[item.fw]||C.midBlue}>{item.fw}</Badge>
+                  <div style={{color:C.deepBlue,fontSize:11,fontFamily:"monospace",textAlign:"right"}}>{item.by}</div>
                 </div>
               ))}
             </div>
           </Card>
+
+          {/* Timeline + Exposure */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
             <Card>
               <SLabel>Regulatory Timeline</SLabel>
-              {analysis.regulatoryTimeline?.map((t,i)=>(
-                <div key={i} style={{display:"flex",gap:10,alignItems:"center",padding:"8px 0",borderBottom:i<(analysis.regulatoryTimeline?.length||0)-1?`1px solid ${C.border}`:"none"}}>
-                  <Badge color={stc[t.status]||C.muted}>{t.status}</Badge>
-                  <div style={{flex:1}}><div style={{color:C.text,fontSize:12}}>{t.milestone}</div><div style={{color:C.muted,fontSize:10,fontFamily:"monospace"}}>{t.deadline}</div></div>
-                  <Badge color={fc[t.framework]||C.midBlue}>{t.framework}</Badge>
+              {analysis.combined?.timeline?.map((t,i)=>(
+                <div key={i} style={{display:"flex",gap:10,alignItems:"center",padding:"8px 0",borderBottom:i<(analysis.combined.timeline.length-1)?`1px solid ${C.border}`:"none"}}>
+                  <Badge color={stc[t.s]||C.muted}>{t.s}</Badge>
+                  <div style={{flex:1}}>
+                    <div style={{color:C.text,fontSize:12}}>{t.m}</div>
+                    <div style={{color:C.muted,fontSize:10,fontFamily:"monospace"}}>{t.d}</div>
+                  </div>
+                  <Badge color={fc[t.fw]||C.midBlue}>{t.fw}</Badge>
                 </div>
               ))}
             </Card>
             <Card accent={C.accent}>
               <SLabel color={C.accent}>Financial Exposure</SLabel>
-              {analysis.potentialFinancialExposure && analysis.potentialFinancialExposure.split(/(?<=[.!?])\s+/).filter(s=>s.trim().length>8).map((pt,i)=>(
-                <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:8}}>
-                  <span style={{color:C.accent,fontWeight:800,flexShrink:0,fontSize:14,lineHeight:"1.4"}}>›</span>
-                  <span style={{color:C.text,fontSize:12,lineHeight:1.65}}>{pt.trim()}</span>
-                </div>
-              ))}
+              <p style={{color:C.text,fontSize:12,lineHeight:1.8,margin:0}}>{analysis.combined?.exposure}</p>
             </Card>
           </div>
         </div>
