@@ -1,42 +1,36 @@
 import { useState, useEffect, useRef } from "react";
 
-// ── DESIGN TOKENS — Official DB EU Brand Palette ─────────────────────────────
-// Source: Deutsche Bank Unternehmensbank brand document (Finanzforum 2026)
-// Primary blues:  Deep Blue · Dark Blue · Mid Blue · Bright Blue · Light Blue · Ice Blue
-// Accent colours: Turquoise · Petrol · Rubine Red · Bright Red · Autumn Green
+// ── DESIGN TOKENS — DB EU Three-Blue System ─────────────────────────────────
+// Restricted to the three official DB primary blues only:
+//   Deep Blue #1E2A78  Dark Blue #16184E  Mid Blue #0069B1
+// All roles derived from these three — no outside palette colours.
 const C = {
-  // Page surfaces — DB Ice Blue + Light Blue family
-  bg:        "#ECF4FC",   // Ice Blue — page wash
-  bgCard:    "#FFFFFF",   // white card surface
-  bgMid:     "#CDE8F8",   // Light Blue tint — inner panels / hover rows
-
-  // DB Primary Blues (RGB converted to hex)
-  deepBlue:  "#1E2A78",   // Deep Blue  30|42|120
-  darkBlue:  "#16184E",   // Dark Blue  22|24|78
-  midBlue:   "#0069B1",   // Mid Blue   0|105|177
-  brightBlue:"#34A6DC",   // Bright Blue 52|166|220
-  lightBlue: "#CDEBFC",   // Light Blue 205|235|252
-  iceBlue:   "#ECF4FC",   // Ice Blue   236|244|252
-
-  // Aliases used throughout the component
-  navy:      "#1E2A78",   // = deepBlue — sidebar, headers
-  navyLight: "#0069B1",   // = midBlue — hover, links
-  gold:      "#0069B1",   // replaced with DB Mid Blue for primary actions
-  goldLight: "#34A6DC",   // = brightBlue — secondary actions, accents
-
-  // DB Accent colours
-  teal:      "#24778D",   // Petrol     36|119|141
-  tealLight: "#3BB8B8",   // Turquoise  59|184|184
-  green:     "#1A6B3C",   // adjusted — DB has Summer/Spring greens; darkened for text
-  red:       "#D4065D",   // Rubine Red 212|6|93
-  redBright: "#E7001D",   // Bright Red 231|0|29
-  amber:     "#F28011",   // Sundown Orange 242|128|17
-
-  white:     "#FFFFFF",
-  offWhite:  "#ECF4FC",   // iceBlue
-  muted:     "#5A6E85",   // blue-toned grey — legible on white
-  border:    "#B8D6EE",   // light blue-grey border
-  text:      "#16184E",   // darkBlue — highest contrast on white
+  deepBlue:   "#1E2A78",  // Deep Blue  30|42|120
+  darkBlue:   "#16184E",  // Dark Blue  22|24|78
+  midBlue:    "#0069B1",  // Mid Blue   0|105|177
+  bg:         "#EBF2FA",  // midBlue ~4% on white — page wash
+  bgCard:     "#FFFFFF",  // white card
+  bgMid:      "#D6E8F5",  // midBlue ~12% — inner panels
+  bgDeep:     "#1E2A78",  // deepBlue — sidebar/dark headers
+  navy:       "#1E2A78",
+  navyLight:  "#2B3A9A",
+  accent:     "#0069B1",
+  accentLight:"#3A8FCC",
+  green:      "#1A5C8A",  // resolved/pass — darkened midBlue
+  amber:      "#1E2A78",  // warning — deepBlue tint
+  red:        "#16184E",  // critical — darkBlue (max contrast)
+  teal:       "#0069B1",
+  tealLight:  "#3A8FCC",
+  gold:       "#0069B1",
+  goldLight:  "#3A8FCC",
+  brightBlue: "#3A8FCC",
+  lightBlue:  "#D6E8F5",
+  white:      "#FFFFFF",
+  offWhite:   "#EBF2FA",
+  text:       "#16184E",
+  muted:      "#4A6080",
+  border:     "#B0CCE8",
+  purple:     "#1E2A78",
 };
 
 // ── MOCK DATA ─────────────────────────────────────────────────────────────────
@@ -284,6 +278,180 @@ function Tag({ color, children }) {
     <span style={{ background: color + "15", border: `1px solid ${color}44`, color, fontSize: 10, fontFamily: "monospace", padding: "2px 8px", borderRadius: 3, marginRight: 5, marginBottom: 4, display: "inline-block" }}>
       {children}
     </span>
+  );
+}
+
+// ── STEP 0: REGULATIONS REFERENCE PAGE ───────────────────────────────────────
+function Step0() {
+  const [active, setActive] = useState("dora");
+
+  const DORA = {
+    title: "Digital Operational Resilience Act",
+    subtitle: "Regulation (EU) 2022/2554  ·  In force: 17 January 2025",
+    color: "#0069B1",
+    summary: "DORA establishes a unified framework for digital operational resilience across EU financial entities. It mandates that all firms can withstand, respond to, and recover from all types of ICT-related disruptions and threats.",
+    pillars: [
+      {
+        num: "01", title: "ICT Risk Management", articles: "Art. 5–16",
+        desc: "Firms must maintain a comprehensive ICT risk management framework with governance, strategy, and continuous improvement cycles. The management body bears ultimate responsibility.",
+        obligations: ["Board-approved ICT risk strategy", "Asset register with dependency mapping", "Detection, protection, recovery controls", "Annual ICT risk assessment", "Business continuity plans"],
+      },
+      {
+        num: "02", title: "ICT Incident Management & Reporting", articles: "Art. 17–23",
+        desc: "Major ICT-related incidents must be classified, managed, and reported to competent authorities (BaFin, ECB) within strict timelines.",
+        obligations: ["Initial notification: 4 hours from classification", "Intermediate report: 72 hours", "Final report: 1 month after resolution", "Root cause analysis required", "Significant cyber threats: voluntary notification"],
+      },
+      {
+        num: "03", title: "Digital Operational Resilience Testing", articles: "Art. 24–27",
+        desc: "Regular testing of ICT tools and systems, including Threat-Led Penetration Testing (TLPT) for significant entities at least every 3 years.",
+        obligations: ["Annual vulnerability assessments", "TLPT every 3 years (significant entities)", "Test results reported to management", "Remediation plans for identified gaps", "Third-party testers require supervisory approval"],
+      },
+      {
+        num: "04", title: "Third-Party ICT Risk Management", articles: "Art. 28–44",
+        desc: "Comprehensive oversight of ICT third-party providers. Critical ICT providers (CTPPs) face direct EU supervisory oversight.",
+        obligations: ["Mandatory contractual provisions", "Register of all ICT third-party arrangements", "Exit strategies for critical providers", "CTPP oversight by Lead Overseer", "Sub-outsourcing chains must be managed"],
+      },
+      {
+        num: "05", title: "ICT Information Sharing", articles: "Art. 45",
+        desc: "Financial entities may voluntarily share cyber threat intelligence with each other to strengthen collective resilience.",
+        obligations: ["Voluntary sharing arrangements permitted", "Confidentiality obligations apply", "Coordinated through competent authorities", "Sharing arrangements must be notified"],
+      },
+    ],
+    fines: "Up to 2% of total annual worldwide turnover (entities) · Up to €1M per natural person",
+    scope: "Banks, investment firms, payment institutions, e-money institutions, insurance undertakings, trading venues, data reporting services, CCPs, CSDs, crypto-asset service providers",
+  };
+
+  const AIACT = {
+    title: "EU Artificial Intelligence Act",
+    subtitle: "Regulation (EU) 2024/1689  ·  Phased in force: August 2024 – August 2027",
+    color: "#1E2A78",
+    summary: "The AI Act is the world's first comprehensive legal framework for AI. It takes a risk-based approach, classifying AI systems into four tiers and imposing obligations proportional to the level of risk they pose.",
+    pillars: [
+      {
+        num: "01", title: "Prohibited AI Practices", articles: "Art. 5",
+        desc: "A small set of AI applications are outright banned as posing unacceptable risks.",
+        obligations: ["Social scoring by public authorities", "Real-time remote biometric ID in public spaces (with narrow exceptions)", "Emotion recognition in workplaces/education", "AI exploiting vulnerabilities of specific groups", "Subliminal manipulation techniques"],
+      },
+      {
+        num: "02", title: "High-Risk AI Systems", articles: "Art. 6, Annex III",
+        desc: "AI systems used in critical infrastructure, education, employment, essential services, law enforcement, migration, and administration of justice — including credit scoring, AML, and robo-advice in financial services.",
+        obligations: ["Conformity assessment before market placement", "Risk management system (Art. 9)", "Data governance requirements (Art. 10)", "Technical documentation (Art. 11)", "Automatic logging / audit trail (Art. 12)", "Transparency & user information (Art. 13)", "Human oversight measures (Art. 14)", "Accuracy, robustness, cybersecurity (Art. 15)", "Registration in EU database (Art. 49)"],
+      },
+      {
+        num: "03", title: "Transparency Obligations", articles: "Art. 50",
+        desc: "Certain AI systems must inform users they are interacting with AI, particularly chatbots and deepfake generators.",
+        obligations: ["Chatbots must disclose AI nature", "Deepfake content must be labelled", "Emotion recognition must disclose to users", "Biometric categorisation must disclose"],
+      },
+      {
+        num: "04", title: "General Purpose AI (GPAI) Models", articles: "Art. 51–56",
+        desc: "Foundation models with systemic risk (e.g. models trained with >10^25 FLOPs) face enhanced obligations.",
+        obligations: ["Technical documentation", "Copyright compliance", "Summary of training data", "Systemic risk models: adversarial testing", "Incident reporting to Commission", "Cybersecurity measures"],
+      },
+    ],
+    fines: "Prohibited AI violations: €35M or 7% of global turnover · High-risk violations: €15M or 3% · Misleading information: €7.5M or 1.5%",
+    scope: "Providers placing AI in EU market, deployers using AI in EU, providers/deployers in third countries where output is used in EU",
+    timeline: [
+      { date: "Aug 2024", event: "Act enters into force" },
+      { date: "Feb 2025", event: "Prohibited practices (Art. 5) apply" },
+      { date: "Aug 2025", event: "GPAI model rules (Art. 51–56) apply" },
+      { date: "Aug 2026", event: "High-risk AI obligations (Art. 6, Annex III) apply — FINANCIAL SERVICES" },
+      { date: "Aug 2027", event: "Full application including Annex I high-risk systems" },
+    ],
+  };
+
+  const reg = active === "dora" ? DORA : AIACT;
+  const ac = reg.color;
+
+  return (
+    <div>
+      {/* Tab switcher */}
+      <div style={{ display:"flex", gap:0, marginBottom:24, background:C.bgMid, borderRadius:8, padding:4, width:"fit-content" }}>
+        {[{id:"dora",label:"DORA",sub:"Reg (EU) 2022/2554"},{id:"aiact",label:"EU AI Act",sub:"Reg (EU) 2024/1689"}].map(t => (
+          <button key={t.id} onClick={() => setActive(t.id)} style={{
+            background: active===t.id ? C.deepBlue : "transparent",
+            border:"none", borderRadius:6, padding:"10px 28px", cursor:"pointer",
+            color: active===t.id ? C.white : C.muted, fontFamily:"inherit",
+            transition:"all 0.15s",
+          }}>
+            <div style={{ fontWeight:700, fontSize:14 }}>{t.label}</div>
+            <div style={{ fontSize:10, opacity:0.7, fontFamily:"monospace" }}>{t.sub}</div>
+          </button>
+        ))}
+      </div>
+
+      {/* Header */}
+      <div style={{ background:C.deepBlue, borderRadius:10, padding:"24px 28px", marginBottom:20 }}>
+        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:20 }}>
+          <div>
+            <div style={{ color:"rgba(255,255,255,0.55)", fontSize:10, fontFamily:"monospace", letterSpacing:2, marginBottom:6 }}>
+              {active==="dora" ? "DIGITAL OPERATIONAL RESILIENCE" : "ARTIFICIAL INTELLIGENCE REGULATION"}
+            </div>
+            <h2 style={{ color:C.white, fontSize:22, fontWeight:800, margin:"0 0 6px" }}>{reg.title}</h2>
+            <div style={{ color:"rgba(255,255,255,0.65)", fontSize:12, fontFamily:"monospace" }}>{reg.subtitle}</div>
+          </div>
+          <div style={{ textAlign:"right", flexShrink:0 }}>
+            <div style={{ color:"rgba(255,255,255,0.45)", fontSize:9, fontFamily:"monospace", marginBottom:4 }}>FINES / PENALTIES</div>
+            <div style={{ color:C.accentLight, fontSize:11, fontFamily:"monospace", maxWidth:300, lineHeight:1.6 }}>{reg.fines}</div>
+          </div>
+        </div>
+        <div style={{ marginTop:16, padding:"12px 16px", background:"rgba(255,255,255,0.08)", borderRadius:6, color:"rgba(255,255,255,0.85)", fontSize:13, lineHeight:1.7 }}>
+          {reg.summary}
+        </div>
+      </div>
+
+      {/* AI Act timeline if relevant */}
+      {active==="aiact" && AIACT.timeline && (
+        <div style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:8, padding:"16px 20px", marginBottom:20 }}>
+          <div style={{ color:C.muted, fontSize:9, fontFamily:"monospace", letterSpacing:2, marginBottom:12 }}>IMPLEMENTATION TIMELINE</div>
+          <div style={{ display:"flex", alignItems:"center", gap:0 }}>
+            {AIACT.timeline.map((t,i) => (
+              <div key={i} style={{ flex:1, textAlign:"center", position:"relative" }}>
+                {i < AIACT.timeline.length-1 && (
+                  <div style={{ position:"absolute", top:10, left:"50%", width:"100%", height:2, background:t.date==="Aug 2026"?C.deepBlue:C.border, zIndex:0 }}/>
+                )}
+                <div style={{
+                  width:20, height:20, borderRadius:"50%", margin:"0 auto 8px",
+                  background: t.date==="Aug 2026" ? C.deepBlue : t.date<"Aug 2026" ? C.midBlue : C.bgMid,
+                  border:`2px solid ${t.date==="Aug 2026"?C.deepBlue:C.midBlue}`,
+                  position:"relative", zIndex:1,
+                }}/>
+                <div style={{ color:t.date==="Aug 2026"?C.deepBlue:C.midBlue, fontSize:10, fontWeight:700, fontFamily:"monospace" }}>{t.date}</div>
+                <div style={{ color:C.text, fontSize:10, lineHeight:1.4, marginTop:3, padding:"0 4px" }}>{t.event}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Five pillars */}
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:20 }}>
+        {reg.pillars.map((p,i) => (
+          <div key={i} style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:8, padding:"16px 20px", borderTop:`3px solid ${i%2===0?C.deepBlue:C.midBlue}` }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+              <div style={{ width:32, height:32, borderRadius:6, background:C.deepBlue, display:"flex", alignItems:"center", justifyContent:"center", color:C.white, fontWeight:800, fontSize:11, fontFamily:"monospace", flexShrink:0 }}>{p.num}</div>
+              <div>
+                <div style={{ color:C.text, fontWeight:700, fontSize:13 }}>{p.title}</div>
+                <div style={{ color:C.midBlue, fontSize:10, fontFamily:"monospace" }}>{p.articles}</div>
+              </div>
+            </div>
+            <p style={{ color:C.muted, fontSize:12, lineHeight:1.6, margin:"0 0 10px" }}>{p.desc}</p>
+            <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+              {p.obligations.map((o,j) => (
+                <div key={j} style={{ display:"flex", gap:8, fontSize:11, color:C.text }}>
+                  <span style={{ color:C.midBlue, fontWeight:700, flexShrink:0 }}>▸</span>{o}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Scope */}
+      <div style={{ background:C.bgMid, border:`1px solid ${C.border}`, borderRadius:8, padding:"14px 18px" }}>
+        <div style={{ color:C.muted, fontSize:9, fontFamily:"monospace", letterSpacing:2, marginBottom:6 }}>SCOPE OF APPLICATION</div>
+        <p style={{ color:C.text, fontSize:12, lineHeight:1.7, margin:0 }}>{reg.scope}</p>
+      </div>
+    </div>
   );
 }
 
@@ -849,6 +1017,7 @@ export default function ComplianceWorkstation() {
   }
 
   const steps = [
+    { n: 0, label: "Regulations", done: false, active: true },
     { n: 1, label: "Application ID", done: !!app },
     { n: 2, label: "App Details", done: !!app && activeStep > 2, active: !!app },
     { n: 3, label: "WALTZ Flows", done: !!app && activeStep > 3, active: !!app },
@@ -857,10 +1026,10 @@ export default function ComplianceWorkstation() {
   ];
 
   const stepColor = (s) => {
-    if (s.n === activeStep) return C.brightBlue;
-    if (s.done) return C.tealLight;
+    if (s.n === activeStep) return C.accentLight;
+    if (s.done) return C.midBlue;
     if (!s.active) return "rgba(255,255,255,0.2)";
-    return C.lightBlue;
+    return "rgba(255,255,255,0.4)";
   };
 
   return (
@@ -895,8 +1064,8 @@ export default function ComplianceWorkstation() {
           {steps.map((s, i) => (
             <div key={s.n}>
               <button
-                onClick={() => { if (s.active || s.done || s.n === 1) setActiveStep(s.n); }}
-                disabled={!s.active && !s.done && s.n !== 1}
+                onClick={() => { if (s.active || s.done || s.n === 1 || s.n === 0) setActiveStep(s.n); }}
+                disabled={!s.active && !s.done && s.n !== 1 && s.n !== 0}
                 style={{
                   width: "100%", background: activeStep === s.n ? "rgba(255,255,255,0.12)" : "transparent",
                   border: "none", borderRight: activeStep === s.n ? `3px solid ${C.goldLight}` : "3px solid transparent",
@@ -956,39 +1125,64 @@ export default function ComplianceWorkstation() {
 
       {/* MAIN CONTENT */}
       <div style={{ flex: 1, overflow: "auto" }}>
-        {/* Top bar */}
-        <div style={{ padding: "14px 28px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 12, background: C.bgCard, position: "sticky", top: 0, zIndex: 10, boxShadow: "0 1px 8px rgba(0,62,126,0.08)" }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ color: C.muted, fontSize: 10, fontFamily: "monospace" }}>
-              {["App Lookup", "Application Details", "WALTZ Data Flows", "Incident Register", "Regulatory Analysis"][activeStep - 1]}
+        {/* Top bar — AI Powered DB EU Compliance Dashboard header */}
+        <div style={{ background: C.deepBlue, position: "sticky", top: 0, zIndex: 10, boxShadow: "0 2px 12px rgba(22,24,78,0.25)" }}>
+          {/* Primary header row */}
+          <div style={{ padding: "12px 28px", borderBottom: "1px solid rgba(255,255,255,0.12)", display: "flex", alignItems: "center", gap: 16 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 9, fontFamily: "monospace", letterSpacing: 3, marginBottom: 3 }}>
+                DEUTSCHE BANK · REGSENTINEL AI
+              </div>
+              <div style={{ color: C.white, fontWeight: 800, fontSize: 17, letterSpacing: 0.3 }}>
+                AI Powered DB EU Compliance Dashboard
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 9, fontFamily: "monospace" }}>FRAMEWORKS</div>
+                <div style={{ display: "flex", gap: 6, marginTop: 3 }}>
+                  <span style={{ background: "rgba(0,105,177,0.5)", border: "1px solid rgba(0,105,177,0.8)", color: C.white, fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 3, fontFamily: "monospace", letterSpacing: 1 }}>DORA</span>
+                  <span style={{ background: "rgba(30,42,120,0.5)", border: "1px solid rgba(255,255,255,0.3)", color: C.white, fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 3, fontFamily: "monospace", letterSpacing: 1 }}>EU AI ACT</span>
+                </div>
+              </div>
+              <div style={{ width: 1, height: 32, background: "rgba(255,255,255,0.15)" }} />
+              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#3A8FCC", boxShadow: "0 0 6px #3A8FCC" }} />
+                <span style={{ color: "#3A8FCC", fontSize: 10, fontFamily: "monospace", fontWeight: 700 }}>ACTIVE</span>
+              </div>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 6 }}>
-            <div style={{ width: 6, height: 6, borderRadius: "50%", background: C.green, animation: "spin 4s linear infinite" }} />
-            <span style={{ color: C.green, fontSize: 10, fontFamily: "monospace" }}>REGSENTINEL ACTIVE</span>
-          </div>
-          {app && activeStep >= 2 && activeStep < 5 && (
-            <div style={{ display: "flex", gap: 6 }}>
-              {[{n:2,l:"Details"},{n:3,l:"WALTZ"},{n:4,l:"Incidents"}].map(t => (
-                <button key={t.n} onClick={() => setActiveStep(t.n)} style={{
-                  background: activeStep === t.n ? C.navy : "transparent",
-                  border: `1px solid ${activeStep === t.n ? C.gold : C.border}`,
-                  color: activeStep === t.n ? C.gold : C.muted,
-                  borderRadius: 4, padding: "4px 12px", fontSize: 11, cursor: "pointer", fontFamily: "monospace",
-                }}>{t.l}</button>
-              ))}
+          {/* Breadcrumb / nav row */}
+          <div style={{ padding: "0 28px", display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, fontFamily: "monospace", marginRight: 4 }}>
+              {["Regulations", "App Lookup", "App Details", "WALTZ Flows", "Incidents", "Analysis"][activeStep]}
             </div>
-          )}
-          {incident && activeStep === 5 && (
-            <button onClick={() => setActiveStep(4)} style={{
-              background: "transparent", border: `1px solid ${C.border}`, color: C.muted,
-              borderRadius: 4, padding: "4px 12px", fontSize: 11, cursor: "pointer", fontFamily: "monospace",
-            }}>← Back to Incidents</button>
-          )}
+            {app && activeStep >= 2 && activeStep < 5 && (
+              <div style={{ display: "flex", marginLeft: "auto" }}>
+                {[{n:2,l:"Details"},{n:3,l:"WALTZ"},{n:4,l:"Incidents"}].map(t => (
+                  <button key={t.n} onClick={() => setActiveStep(t.n)} style={{
+                    background: "transparent",
+                    borderBottom: activeStep === t.n ? `2px solid ${C.midBlue}` : "2px solid transparent",
+                    border: "none", borderBottom: activeStep === t.n ? `2px solid ${C.accentLight}` : "2px solid transparent",
+                    color: activeStep === t.n ? C.white : "rgba(255,255,255,0.45)",
+                    padding: "8px 16px", fontSize: 11, cursor: "pointer", fontFamily: "monospace",
+                    fontWeight: activeStep === t.n ? 700 : 400, transition: "all 0.15s",
+                  }}>{t.l}</button>
+                ))}
+              </div>
+            )}
+            {incident && activeStep === 5 && (
+              <button onClick={() => setActiveStep(4)} style={{
+                background: "transparent", border: "none", color: "rgba(255,255,255,0.5)",
+                padding: "8px 0", fontSize: 11, cursor: "pointer", fontFamily: "monospace", marginLeft: "auto",
+              }}>← Back to Incidents</button>
+            )}
+          </div>
         </div>
 
         {/* Step content */}
         <div style={{ padding: 28, animation: "fadeIn 0.25s ease" }}>
+          {activeStep === 0 && <Step0 />}
           {activeStep === 1 && <Step1 onSelect={handleSelectApp} />}
           {activeStep === 2 && app && <Step2 app={app} />}
           {activeStep === 3 && app && <Step3 app={app} />}
