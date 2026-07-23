@@ -1,4 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, createContext, useContext } from "react";
+
+// ── API KEY CONTEXT ───────────────────────────────────────────────────────────
+const ApiKeyContext = createContext({ apiKey: "", setApiKey: () => {} });
+function useApiKey() { return useContext(ApiKeyContext); }
 
 // ── DESIGN TOKENS — DB EU Three-Blue System ─────────────────────────────────
 // Restricted to the three official DB primary blues only:
@@ -169,18 +173,156 @@ const APPLICATIONS = {
   },
 };
 
+// ── DYNAMIC MOCK GENERATOR — generates plausible data for any APP-XXXX ────────
+const APP_TEMPLATES = {
+  types: [
+    { name:"Fraud Detection Engine", owner:"Financial Crime", bu:"Corporate Bank", ai:true, stack:{lang:["Python 3.11","Scala 2.13"],fw:["Apache Flink","FastAPI"],db:["Cassandra","Redis"],ai:["PyTorch 2.1","Isolation Forest"],msg:["Kafka","SWIFT"]}, upstreams:["Payment Processor","Core Banking","Sanctions DB"], downstreams:["Case Management","Risk Dashboard","Audit Log"] },
+    { name:"Customer Churn Predictor", owner:"Digital Analytics", bu:"Retail Bank", ai:true, stack:{lang:["Python 3.11","R 4.3"],fw:["FastAPI","Streamlit"],db:["PostgreSQL 15","MongoDB"],ai:["XGBoost 1.7","SHAP 0.42"],msg:["Kafka","Azure Service Bus"]}, upstreams:["CRM System","Transaction History","Product Catalogue"], downstreams:["Campaign Platform","RM Dashboard","Reporting Engine"] },
+    { name:"Liquidity Risk Calculator", owner:"Treasury Risk", bu:"Investment Bank", ai:false, stack:{lang:["Java 17","Python 3.11"],fw:["Spring Boot","Pandas"],db:["Oracle 19c","InfluxDB"],ai:[],msg:["IBM MQ","Bloomberg API"]}, upstreams:["Market Data Feed","Position System","Collateral Manager"], downstreams:["Regulatory Reporting","Risk Dashboard","ALM System"] },
+    { name:"KYC Document Classifier", owner:"Compliance Operations", bu:"Private Bank", ai:true, stack:{lang:["Python 3.11","TypeScript"],fw:["FastAPI","React 18"],db:["PostgreSQL 15","Elasticsearch"],ai:["Hugging Face Transformers","Tesseract OCR"],msg:["Azure Service Bus","RabbitMQ"]}, upstreams:["Document Ingestion","Customer Portal","ID Verification API"], downstreams:["Onboarding System","CDD Store","Compliance Portal"] },
+    { name:"Trade Surveillance Monitor", owner:"Markets Compliance", bu:"Corporate Bank", ai:true, stack:{lang:["Scala 2.13","Python 3.11"],fw:["Apache Flink","FastAPI"],db:["ClickHouse","Neo4j"],ai:["GNN Model","Anomaly Detection"],msg:["Kafka","FIX Protocol"]}, upstreams:["Order Management System","Market Data","Trader Comms"], downstreams:["Compliance Alerts","Regulatory Filing","Risk Ops"] },
+    { name:"ESG Scoring Platform", owner:"Sustainable Finance", bu:"Asset Management", ai:true, stack:{lang:["Python 3.11","R 4.3"],fw:["FastAPI","Dash"],db:["PostgreSQL","InfluxDB"],ai:["FinBERT","Random Forest"],msg:["Kafka","REST"]}, upstreams:["Bloomberg ESG Feed","Sustainalytics API","Portfolio System"], downstreams:["Client Reports","Fund Admin","Regulatory Disclosures"] },
+    { name:"Payments Routing Engine", owner:"Transaction Banking", bu:"Corporate Bank", ai:false, stack:{lang:["Java 17","Go 1.21"],fw:["Spring Boot","gRPC"],db:["PostgreSQL","Redis"],ai:[],msg:["SWIFT Alliance","ISO 20022","SEPA"]}, upstreams:["Corporate Banking Portal","Forex System","Correspondent Banks"], downstreams:["Settlement Engine","Reconciliation","SWIFT Gateway"] },
+    { name:"Mortgage Underwriting AI", owner:"Home Finance", bu:"Retail Bank", ai:true, stack:{lang:["Python 3.11","Java 17"],fw:["FastAPI","Spring Boot"],db:["PostgreSQL","Redis"],ai:["LightGBM","SHAP"],msg:["Kafka","IBM MQ"]}, upstreams:["Credit Bureau","Property Valuation API","Income Verification"], downstreams:["Mortgage Origination","Regulatory Reporting","Customer Portal"] },
+  ],
+  incidents: {
+    ai: [
+      { title:"Model accuracy degradation below threshold — retraining required", category:"AI Model", doraFlag:true, aiActFlag:true },
+      { title:"Explainability module timeout — decisions made without SHAP output", category:"Explainability", doraFlag:true, aiActFlag:true },
+      { title:"Bias alert — demographic disparity detected in model outputs", category:"Bias / Fairness", doraFlag:false, aiActFlag:true },
+      { title:"Model served stale predictions — feature pipeline lag > 6 hours", category:"AI Model", doraFlag:true, aiActFlag:true },
+      { title:"Human override workflow bypassed — automated decisions exceeded threshold", category:"AI Governance", doraFlag:false, aiActFlag:true },
+    ],
+    infra: [
+      { title:"Database failover triggered — processing outage during switch", category:"Infrastructure", doraFlag:true, aiActFlag:false },
+      { title:"Third-party API connector unavailable — fallback logic activated", category:"Third-Party", doraFlag:true, aiActFlag:false },
+      { title:"Network latency spike — SLA breach on response time", category:"Infrastructure", doraFlag:true, aiActFlag:false },
+      { title:"Certificate expiry caused downstream authentication failures", category:"Security", doraFlag:true, aiActFlag:false },
+      { title:"Cloud region failover — 12-minute service degradation", category:"Infrastructure", doraFlag:true, aiActFlag:false },
+    ],
+  },
+  protocols: ["REST/TLS","Kafka","IBM MQ","JDBC","gRPC","ISO 20022","FIX 4.4","SWIFT MT/MX","Azure SDK","WebSocket"],
+  types_list: ["Database","API Gateway","Microservice","Core Banking","Service","Workflow","BI Platform","Message Bus"],
+  severity: ["P1","P1","P2","P2","P2","P3"],
+  statuses: ["Resolved","Resolved","Resolved","Open","Resolved"],
+  durations: ["4h 22m","1h 48m","23m","6h 10m","47m","2h 05m","8m","3h 20m","55m"],
+};
+
+function seedRng(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+  return () => { h = Math.imul(h ^ (h >>> 16), 0x45d9f3b); h = Math.imul(h ^ (h >>> 16), 0x45d9f3b); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+}
+
+function generateApp(id) {
+  // Return real app if exists
+  if (APPLICATIONS[id]) return APPLICATIONS[id];
+
+  const rng = seedRng(id);
+  const pick = (arr) => arr[Math.floor(rng() * arr.length)];
+  const num = (min, max) => Math.floor(rng() * (max - min + 1)) + min;
+  const T = APP_TEMPLATES;
+
+  const tmpl = pick(T.types);
+  const isAI = tmpl.ai;
+  const criticality = pick(["CRITICAL","CRITICAL","IMPORTANT","IMPORTANT","STANDARD"]);
+  const numIncidents = num(2, 5);
+
+  const usedTitles = new Set();
+  const incidents = [];
+  const pool = isAI ? [...T.incidents.ai, ...T.incidents.infra] : T.incidents.infra;
+  for (let i = 0; i < numIncidents; i++) {
+    let inc;
+    let tries = 0;
+    do { inc = pick(pool); tries++; } while (usedTitles.has(inc.title) && tries < 20);
+    usedTitles.add(inc.title);
+    const sev = pick(T.severity);
+    const month = num(1, 6).toString().padStart(2,"0");
+    const day = num(1, 28).toString().padStart(2,"0");
+    incidents.push({
+      id: `INC${num(7000000,8999999)}`,
+      severity: sev,
+      status: pick(T.statuses),
+      date: `2026-${month}-${day}`,
+      title: inc.title,
+      category: inc.category,
+      doraFlag: inc.doraFlag,
+      aiActFlag: inc.aiActFlag,
+      duration: pick(T.durations),
+      affectedUsers: sev === "P1" ? num(0,20000) : sev === "P2" ? num(0,5000) : 0,
+    });
+  }
+  incidents.sort((a,b) => b.date.localeCompare(a.date));
+
+  const upstream = tmpl.upstreams.map((name,i) => ({
+    id: `US-${id.replace("APP-","")}-${i+1}`,
+    name,
+    type: pick(T.types_list),
+    protocol: pick(T.protocols),
+    data: `${name} data feed`,
+    criticality: pick(["CRITICAL","CRITICAL","HIGH","MEDIUM"]),
+  }));
+  const downstream = tmpl.downstreams.map((name,i) => ({
+    id: `DS-${id.replace("APP-","")}-${i+1}`,
+    name,
+    type: pick(T.types_list),
+    protocol: pick(T.protocols),
+    data: `${name} outputs`,
+    criticality: pick(["CRITICAL","HIGH","MEDIUM"]),
+  }));
+
+  return {
+    id,
+    name: tmpl.name,
+    owner: tmpl.owner,
+    bu: tmpl.bu,
+    classification: isAI ? "HIGH_RISK_AI" : "STANDARD",
+    criticality,
+    functional: {
+      description: `${tmpl.name} serving the ${tmpl.bu} division. Manages critical operations with ${isAI ? "AI/ML-powered decision making" : "automated rule-based processing"} across Deutsche Bank's EU entities.`,
+      capabilities: [
+        `Core ${tmpl.name.toLowerCase()} processing`,
+        "Real-time data pipeline integration",
+        "Regulatory reporting and audit trail",
+        "Exception handling and alerting",
+        "Management dashboard and KPIs",
+      ],
+      aiComponents: isAI ? tmpl.stack.ai.map(a => `${a} (production)`) : [],
+    },
+    tech: {
+      languages: tmpl.stack.lang,
+      frameworks: tmpl.stack.fw,
+      databases: tmpl.stack.db,
+      aiStack: tmpl.stack.ai,
+      messaging: tmpl.stack.msg,
+    },
+    infra: {
+      hosting: pick(["Azure EU (Frankfurt / Amsterdam — active-active)", "Azure EU (Frankfurt — primary, Warsaw — DR)", "Azure EU (Frankfurt — primary)"]),
+      dataResidency: "EU only — no cross-border data transfer",
+      availability: criticality === "CRITICAL" ? "99.95% SLA (Tier 1)" : "99.9% SLA (Tier 2)",
+      rto: pick(["4 hours","2 hours","8 hours","30 minutes"]),
+      rpo: pick(["15 minutes","1 hour","Zero (synchronous)","30 minutes"]),
+      certifications: ["ISO 27001","SOC 2 Type II"],
+    },
+    waltz: { upstream, downstream },
+    incidents,
+  };
+}
+
 // ── CLAUDE API ────────────────────────────────────────────────────────────────
-async function callClaude(system, user) {
+async function callClaude(system, user, apiKey) {
+  if (!apiKey) throw new Error("NO_API_KEY");
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
     body: JSON.stringify({
       model: "claude-sonnet-4-6",
-      max_tokens: 4000,   // increased — regulatory analysis JSON is large
+      max_tokens: 4000,
       system,
       messages: [{ role: "user", content: user }],
     }),
   });
+  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || `HTTP ${res.status}`); }
   const data = await res.json();
   return data.content?.[0]?.text || "";
 }
@@ -234,7 +376,7 @@ function extractJSON(raw) {
 }
 
 // ── SHARED UI ─────────────────────────────────────────────────────────────────
-function Spinner({ size = 16, color = C.gold }) {
+function Spinner({ size = 16, color = C.deepBlue }) {
   return (
     <span style={{ display: "inline-block", width: size, height: size, border: `2px solid ${C.border}`, borderTopColor: color, borderRadius: "50%", animation: "spin 0.7s linear infinite", verticalAlign: "middle", marginRight: 6 }} />
   );
@@ -242,17 +384,18 @@ function Spinner({ size = 16, color = C.gold }) {
 
 function Badge({ color, children, size = 10 }) {
   return (
-    <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 3, background: color + "22", border: `1px solid ${color}66`, color, fontSize: size, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase", fontFamily: "monospace" }}>
+    <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 3, background: color + "18", border: `1px solid ${color}`, color: color, fontSize: size, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase", fontFamily: "monospace" }}>
       {children}
     </span>
   );
 }
 
-function SectionTag({ children, color = C.gold }) {
+function SectionTag({ children, color = C.deepBlue }) {
   return (
     <div style={{ fontSize: 9, letterSpacing: 3, textTransform: "uppercase", color, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, marginBottom: 6 }}>
       {children}
     </div>
+    </ApiKeyContext.Provider>
   );
 }
 
@@ -260,8 +403,9 @@ function InfoRow({ label, value, mono = false }) {
   return (
     <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "6px 0", borderBottom: `1px solid ${C.border}` }}>
       <span style={{ color: C.muted, fontSize: 11, fontFamily: "monospace", minWidth: 140, flexShrink: 0 }}>{label}</span>
-      <span style={{ color: C.offWhite, fontSize: 12, fontFamily: mono ? "monospace" : "inherit", lineHeight: 1.5 }}>{value}</span>
+      <span style={{ color: C.text, fontSize: 12, fontFamily: mono ? "monospace" : "inherit", lineHeight: 1.5 }}>{value}</span>
     </div>
+    </ApiKeyContext.Provider>
   );
 }
 
@@ -270,14 +414,88 @@ function Card({ children, style = {}, accent }) {
     <div style={{ background: C.bgCard, border: `1px solid ${accent || C.border}`, borderRadius: 8, padding: 20, ...style }}>
       {children}
     </div>
+    </ApiKeyContext.Provider>
   );
 }
 
 function Tag({ color, children }) {
   return (
-    <span style={{ background: color + "15", border: `1px solid ${color}44`, color, fontSize: 10, fontFamily: "monospace", padding: "2px 8px", borderRadius: 3, marginRight: 5, marginBottom: 4, display: "inline-block" }}>
+    <span style={{ background: color + "18", border: `1px solid ${color}`, color: color, fontSize: 10, fontFamily: "monospace", padding: "2px 8px", borderRadius: 3, marginRight: 5, marginBottom: 4, display: "inline-block" }}>
       {children}
     </span>
+  );
+}
+
+// ── REGULATION DETAIL MODAL ───────────────────────────────────────────────────
+function RegModal({ which, onClose }) {
+  if (!which) return null;
+  // Reuse regulation data inline (abbreviated from Step0)
+  const data = which === "dora" ? {
+    title: "Digital Operational Resilience Act",
+    sub: "Regulation (EU) 2022/2554 · In force: 17 January 2025",
+    color: C.midBlue,
+    summary: "DORA establishes a unified ICT risk management framework for EU financial entities. Firms must withstand, respond to, and recover from all ICT-related disruptions. The management body bears ultimate responsibility.",
+    fines: "Up to 2% of total annual worldwide turnover",
+    pillars: [
+      { num:"01", title:"ICT Risk Management", art:"Art. 5–16", items:["Board-approved ICT risk strategy","Asset register & dependency mapping","Detection, protection & recovery controls","Annual ICT risk assessment"] },
+      { num:"02", title:"Incident Reporting", art:"Art. 17–23", items:["Initial report to BaFin: 4 hours","Intermediate report: 72 hours","Final report: 1 month","Root cause analysis required"] },
+      { num:"03", title:"Resilience Testing", art:"Art. 24–27", items:["Annual vulnerability assessments","TLPT every 3 years","Results reported to management","Remediation plans for gaps"] },
+      { num:"04", title:"Third-Party Risk", art:"Art. 28–44", items:["Mandatory contractual provisions","Register of all ICT arrangements","Exit strategies for critical providers","Sub-outsourcing chain management"] },
+    ],
+  } : {
+    title: "EU Artificial Intelligence Act",
+    sub: "Regulation (EU) 2024/1689 · High-risk obligations: August 2026",
+    color: C.deepBlue,
+    summary: "The AI Act takes a risk-based approach to AI regulation. High-risk AI systems in financial services — including credit scoring, AML, and investment advice — must meet strict conformity, transparency, and human oversight requirements.",
+    fines: "Up to 3% of global annual turnover for high-risk violations · 7% for prohibited practices",
+    pillars: [
+      { num:"01", title:"High-Risk Classification", art:"Art. 6, Annex III", items:["Credit scoring & loan decisioning → HIGH RISK","AML transaction monitoring → HIGH RISK","Investment advisory / robo-advice → HIGH RISK","Conformity assessment required before deployment"] },
+      { num:"02", title:"Data & Transparency", art:"Art. 10–13", items:["Data governance & quality controls","Technical documentation maintained","Automatic logging of all decisions (Art. 12)","User information & transparency requirements"] },
+      { num:"03", title:"Human Oversight", art:"Art. 14–15", items:["Human-in-the-loop measures mandatory","Override capability required","Operators must be trained","Accuracy & robustness standards"] },
+      { num:"04", title:"GPAI & Reporting", art:"Art. 51–56, 62", items:["Serious incident reporting to market surveillance","Post-market monitoring required","Registration in EU AI database (Art. 49)","Notifying authority: BaFin (DE)"] },
+    ],
+  };
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(22,24,78,0.6)", zIndex:9000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }} onClick={onClose}>
+      <div style={{ background:C.bgCard, borderRadius:12, border:`2px solid ${data.color}`, width:"100%", maxWidth:680, maxHeight:"85vh", overflowY:"auto", boxShadow:"0 8px 40px rgba(22,24,78,0.3)" }} onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div style={{ background:data.color, padding:"20px 24px", borderRadius:"10px 10px 0 0" }}>
+          <div style={{ color:"rgba(255,255,255,0.55)", fontSize:9, fontFamily:"monospace", letterSpacing:2, marginBottom:4 }}>REGULATORY FRAMEWORK</div>
+          <div style={{ color:C.white, fontWeight:800, fontSize:18, marginBottom:4 }}>{data.title}</div>
+          <div style={{ color:"rgba(255,255,255,0.65)", fontSize:11, fontFamily:"monospace" }}>{data.sub}</div>
+        </div>
+        <div style={{ padding:24 }}>
+          <p style={{ color:C.text, fontSize:13, lineHeight:1.75, margin:"0 0 20px" }}>{data.summary}</p>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:20 }}>
+            {data.pillars.map((p,i) => (
+              <div key={i} style={{ background:C.bg, border:`1px solid ${C.border}`, borderTop:`3px solid ${data.color}`, borderRadius:8, padding:"14px 16px" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                  <div style={{ width:28, height:28, borderRadius:5, background:data.color, color:C.white, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:800, fontFamily:"monospace", flexShrink:0 }}>{p.num}</div>
+                  <div>
+                    <div style={{ color:C.text, fontWeight:700, fontSize:12 }}>{p.title}</div>
+                    <div style={{ color:data.color, fontSize:10, fontFamily:"monospace" }}>{p.art}</div>
+                  </div>
+                </div>
+                {p.items.map((item,j) => (
+                  <div key={j} style={{ display:"flex", gap:6, fontSize:11, color:C.text, marginBottom:4 }}>
+                    <span style={{ color:data.color, flexShrink:0 }}>▸</span>{item}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+          <div style={{ padding:"10px 16px", background:C.bgMid, borderRadius:6, display:"flex", gap:12, alignItems:"center" }}>
+            <span style={{ color:C.muted, fontSize:10, fontFamily:"monospace", fontWeight:700 }}>MAX FINE:</span>
+            <span style={{ color:C.deepBlue, fontSize:12, fontWeight:700 }}>{data.fines}</span>
+          </div>
+          <div style={{ marginTop:16, textAlign:"right" }}>
+            <button onClick={onClose} style={{ background:data.color, color:C.white, border:"none", borderRadius:6, padding:"9px 24px", fontSize:12, fontWeight:700, cursor:"pointer" }}>Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    </ApiKeyContext.Provider>
   );
 }
 
@@ -452,6 +670,7 @@ function Step0() {
         <p style={{ color:C.text, fontSize:12, lineHeight:1.7, margin:0 }}>{reg.scope}</p>
       </div>
     </div>
+    </ApiKeyContext.Provider>
   );
 }
 
@@ -463,10 +682,10 @@ function Step1({ onSelect }) {
 
   function handleLookup(id) {
     const val = (id || input).trim().toUpperCase();
-    if (!val) { setError("Enter an Application ID"); return; }
-    if (!APPLICATIONS[val]) { setError(`No application found for ID "${val}". Try: APP-2841, APP-1193, APP-3307`); return; }
+    if (!val) { setError("Enter an Application ID (e.g. APP-2841 or any APP-XXXX)"); return; }
+    if (!/^APP-\d{4}$/.test(val)) { setError("Format must be APP-XXXX where XXXX is a 4-digit number"); return; }
     setError("");
-    onSelect(APPLICATIONS[val]);
+    onSelect(generateApp(val));
   }
 
   return (
@@ -476,7 +695,7 @@ function Step1({ onSelect }) {
         Enter Application ID
       </h2>
       <p style={{ color: C.muted, fontSize: 13, marginBottom: 32, lineHeight: 1.6 }}>
-        Enter a DB Application ID to begin the DORA & EU AI Act compliance investigation. The system will retrieve application details, WALTZ data flows, and ServiceNow incident history.
+        Enter any Application ID in the format APP-XXXX (e.g. APP-2841, APP-1193, APP-5500). Registered applications load real data; any other valid ID generates a realistic mock profile for demo purposes.
       </p>
 
       <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
@@ -484,7 +703,7 @@ function Step1({ onSelect }) {
           value={input}
           onChange={e => { setInput(e.target.value.toUpperCase()); setError(""); }}
           onKeyDown={e => e.key === "Enter" && handleLookup()}
-          placeholder="e.g. APP-2841"
+          placeholder="APP-XXXX (e.g. APP-2841, APP-5500, APP-9001)"
           autoFocus
           style={{
             flex: 1, background: C.bgMid, border: `1px solid ${error ? C.red : C.border}`,
@@ -513,7 +732,7 @@ function Step1({ onSelect }) {
 
       <div style={{ marginTop: 28 }}>
         <div style={{ color: C.muted, fontSize: 10, fontFamily: "monospace", letterSpacing: 2, marginBottom: 12 }}>
-          REGISTERED APPLICATIONS IN SCOPE
+          SAMPLE APPLICATIONS (or type any APP-XXXX)
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {recent.map(id => {
@@ -538,6 +757,7 @@ function Step1({ onSelect }) {
         </div>
       </div>
     </div>
+    </ApiKeyContext.Provider>
   );
 }
 
@@ -610,6 +830,7 @@ function Step2({ app }) {
         </Card>
       </div>
     </div>
+    </ApiKeyContext.Provider>
   );
 }
 
@@ -688,6 +909,7 @@ function Step3({ app }) {
         </div>
       )}
     </div>
+    </ApiKeyContext.Provider>
   );
 }
 
@@ -750,11 +972,13 @@ function Step4({ app, onSelectIncident }) {
         ))}
       </div>
     </div>
+    </ApiKeyContext.Provider>
   );
 }
 
 // ── STEP 5: REGULATORY ANALYSIS ───────────────────────────────────────────────
 function Step5({ app, incident }) {
+  const { apiKey: claudeKey } = useApiKey();
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -825,7 +1049,7 @@ AI Act Flagged: ${incident.aiActFlag}
 
 Provide a detailed DORA and EU AI Act regulatory analysis of this incident.`;
 
-    callClaude(SYSTEM, userMsg)
+    callClaude(SYSTEM, userMsg, claudeKey)
       .then(raw => {
         try {
           setAnalysis(extractJSON(raw));
@@ -833,7 +1057,7 @@ Provide a detailed DORA and EU AI Act regulatory analysis of this incident.`;
           setError("Analysis parsing failed — " + e.message + ". Raw snippet: " + raw.slice(0, 120));
         }
       })
-      .catch(e => setError("API call failed: " + e.message + ". Please retry."))
+      .catch(e => setError(e.message === 'NO_API_KEY' ? 'No API key configured — click ⚙ in the header to add your Anthropic API key.' : 'API call failed: ' + e.message))
       .finally(() => setLoading(false));
   }, [incident.id]);
 
@@ -996,6 +1220,7 @@ Provide a detailed DORA and EU AI Act regulatory analysis of this incident.`;
         </div>
       )}
     </div>
+    </ApiKeyContext.Provider>
   );
 }
 
@@ -1003,7 +1228,14 @@ Provide a detailed DORA and EU AI Act regulatory analysis of this incident.`;
 export default function ComplianceWorkstation() {
   const [app, setApp] = useState(null);
   const [incident, setIncident] = useState(null);
-  const [activeStep, setActiveStep] = useState(1);
+  const [activeStep, setActiveStep] = useState(0);
+  const [showSettings, setShowSettings] = useState(false);
+  const [regModal, setRegModal] = useState(null); // "dora" | "aiact" | null
+  const [apiKey, setApiKeyState] = useState(() => { try { return localStorage.getItem("rs_api_key") || ""; } catch(_) { return ""; } });
+  function setApiKey(k) { setApiKeyState(k); try { localStorage.setItem("rs_api_key", k); } catch(_) {} }
+
+  // Show settings on first load if no key saved
+  useEffect(() => { if (!apiKey) setShowSettings(true); }, []);
 
   function handleSelectApp(selectedApp) {
     setApp(selectedApp);
@@ -1033,6 +1265,9 @@ export default function ComplianceWorkstation() {
   };
 
   return (
+    <ApiKeyContext.Provider value={{ apiKey, setApiKey }}>
+    {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+    {regModal && <RegModal which={regModal} onClose={() => setRegModal(null)} />}
     <div style={{ minHeight: "100vh", background: C.bg, color: C.white, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", display: "flex" }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -1141,8 +1376,8 @@ export default function ComplianceWorkstation() {
               <div style={{ textAlign: "right" }}>
                 <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 9, fontFamily: "monospace" }}>FRAMEWORKS</div>
                 <div style={{ display: "flex", gap: 6, marginTop: 3 }}>
-                  <span style={{ background: "rgba(0,105,177,0.5)", border: "1px solid rgba(0,105,177,0.8)", color: C.white, fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 3, fontFamily: "monospace", letterSpacing: 1 }}>DORA</span>
-                  <span style={{ background: "rgba(30,42,120,0.5)", border: "1px solid rgba(255,255,255,0.3)", color: C.white, fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 3, fontFamily: "monospace", letterSpacing: 1 }}>EU AI ACT</span>
+                  <span onClick={() => setRegModal("dora")} style={{ background: "rgba(0,105,177,0.5)", border: "1px solid rgba(0,105,177,0.8)", color: C.white, fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 3, fontFamily: "monospace", letterSpacing: 1, cursor:"pointer" }} title="View DORA details">DORA ↗</span>
+                  <span onClick={() => setRegModal("aiact")} style={{ background: "rgba(30,42,120,0.5)", border: "1px solid rgba(255,255,255,0.3)", color: C.white, fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 3, fontFamily: "monospace", letterSpacing: 1, cursor:"pointer" }} title="View EU AI Act details">EU AI ACT ↗</span>
                 </div>
               </div>
               <div style={{ width: 1, height: 32, background: "rgba(255,255,255,0.15)" }} />
@@ -1150,6 +1385,7 @@ export default function ComplianceWorkstation() {
                 <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#3A8FCC", boxShadow: "0 0 6px #3A8FCC" }} />
                 <span style={{ color: "#3A8FCC", fontSize: 10, fontFamily: "monospace", fontWeight: 700 }}>ACTIVE</span>
               </div>
+              <button onClick={() => setShowSettings(true)} title="Configure API Key" style={{ background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.25)", color:C.white, borderRadius:5, padding:"4px 10px", fontSize:12, cursor:"pointer" }}>⚙</button>
             </div>
           </div>
           {/* Breadcrumb / nav row */}
@@ -1191,5 +1427,6 @@ export default function ComplianceWorkstation() {
         </div>
       </div>
     </div>
+    </ApiKeyContext.Provider>
   );
 }
