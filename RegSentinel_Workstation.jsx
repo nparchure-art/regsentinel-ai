@@ -245,54 +245,279 @@ function Tag({color,children}){
 // ── REGULATION MODAL ──────────────────────────────────────────────────────────
 function RegModal({which,onClose}){
   if(!which) return null;
-  const d = which==="dora" ? {
-    title:"Digital Operational Resilience Act", sub:"Regulation (EU) 2022/2554 · In force: 17 January 2025", color:C.midBlue,
-    summary:"DORA establishes a unified ICT risk management framework for EU financial entities. Firms must withstand, respond to, and recover from all ICT-related disruptions. The management body bears ultimate responsibility.",
-    fines:"Up to 2% of total annual worldwide turnover",
-    pillars:[
-      {n:"01",title:"ICT Risk Management",art:"Art. 5–16",items:["Board-approved ICT risk strategy","Asset register & dependency mapping","Detection, protection & recovery controls","Annual ICT risk assessment"]},
-      {n:"02",title:"Incident Reporting",art:"Art. 17–23",items:["Initial report to BaFin: 4 hours","Intermediate report: 72 hours","Final report: 1 month","Root cause analysis required"]},
-      {n:"03",title:"Resilience Testing",art:"Art. 24–27",items:["Annual vulnerability assessments","TLPT every 3 years (significant entities)","Results reported to management","Remediation plans for all gaps"]},
-      {n:"04",title:"Third-Party Risk",art:"Art. 28–44",items:["Mandatory contractual provisions","Register of all ICT arrangements","Exit strategies for critical providers","Sub-outsourcing chain management"]},
+  const isDora = which==="dora";
+
+  const DORA_DATA = {
+    title:"Digital Operational Resilience Act (DORA)",
+    sub:"Regulation (EU) 2022/2554 · Published: 27 December 2022 · In force: 17 January 2025",
+    color:C.midBlue,
+    icon:"🛡",
+    overview:"DORA creates a harmonised, comprehensive framework for digital operational resilience across the EU financial sector. It consolidates and elevates ICT risk requirements that were previously scattered across sector-specific rules, ensuring every financial entity — regardless of size or type — can prevent, withstand, contain, and recover from all ICT-related disruptions and threats.",
+    whyItMatters:"Before DORA, each sector (banking, insurance, securities) had its own fragmented ICT guidance. DORA replaces this patchwork with a single, binding regulation supervised directly by competent authorities (BaFin in Germany, ECB for significant institutions). The management body is explicitly accountable — individual board members can be held personally liable.",
+    keyFacts:[
+      "Applies to 22 categories of financial entities across the EU",
+      "Management body bears ultimate and non-delegable responsibility for ICT risk",
+      "Major incidents must be reported to regulators within 4 hours initially",
+      "Critical third-party ICT providers (CTPPs) are directly supervised by EU Lead Overseers (EBA, ESMA, EIOPA)",
+      "Threat-Led Penetration Testing (TLPT) required every 3 years for significant entities",
+      "Sub-outsourcing chains must be contractually controlled — 'fourth parties' are in scope",
     ],
-  } : {
-    title:"EU Artificial Intelligence Act", sub:"Regulation (EU) 2024/1689 · High-risk obligations: August 2026", color:C.deepBlue,
-    summary:"The AI Act takes a risk-based approach. High-risk AI in financial services — credit scoring, AML, investment advisory — must meet conformity, transparency, and human oversight requirements.",
-    fines:"Up to 3% of global turnover (high-risk violations) · 7% for prohibited practices",
     pillars:[
-      {n:"01",title:"High-Risk Classification",art:"Art. 6, Annex III",items:["Credit scoring → HIGH RISK","AML transaction monitoring → HIGH RISK","Investment advisory / robo-advice → HIGH RISK","Conformity assessment before deployment"]},
-      {n:"02",title:"Data & Transparency",art:"Art. 10–13",items:["Data governance & quality controls","Technical documentation maintained","Automatic logging of all decisions (Art. 12)","User information & transparency requirements"]},
-      {n:"03",title:"Human Oversight",art:"Art. 14–15",items:["Human-in-the-loop measures mandatory","Override capability required","Operators must be trained","Accuracy & robustness standards"]},
-      {n:"04",title:"Reporting & Registration",art:"Art. 51–56, 62",items:["Serious incident reporting to market surveillance","Post-market monitoring required","Registration in EU AI database (Art. 49)","Notifying authority: BaFin (Germany)"]},
+      {n:"01",title:"ICT Risk Management",art:"Art. 5–16",
+        desc:"Requires a comprehensive, documented ICT risk management framework approved by the management body. Must cover identification, protection, detection, response and recovery, and communication.",
+        items:[
+          "Board-approved ICT risk strategy reviewed at least annually",
+          "Complete asset register with all ICT assets and dependencies mapped",
+          "Identification of all ICT-supported business functions and their criticality",
+          "Continuous vulnerability monitoring and patch management processes",
+          "Business continuity plans tested and updated at least annually",
+          "ICT legacy system risk management with documented mitigation plans",
+          "Post-incident reviews after every major ICT-related incident",
+        ]},
+      {n:"02",title:"ICT Incident Management & Reporting",art:"Art. 17–23",
+        desc:"Mandates classification of ICT incidents as 'major' or otherwise using EBA/ESMA/EIOPA criteria. Major incidents trigger a three-stage regulatory reporting obligation to the competent authority.",
+        items:[
+          "Initial notification to competent authority (BaFin/ECB): within 4 hours of classification",
+          "Intermediate report with updated details: within 72 hours",
+          "Final report with root cause analysis: within 1 month of resolution",
+          "Incidents affecting clients must be communicated transparently",
+          "Significant cyber threats: voluntary early notification encouraged",
+          "Annual summary statistics reported to competent authorities",
+          "DORA prescribes exact templates and data fields for all reports",
+        ]},
+      {n:"03",title:"Digital Operational Resilience Testing",art:"Art. 24–27",
+        desc:"Establishes a tiered testing programme. All entities run basic vulnerability assessments; significant entities additionally conduct Threat-Led Penetration Testing (TLPT) using approved testers.",
+        items:[
+          "Annual vulnerability assessments and scenario-based testing for all entities",
+          "TLPT mandatory every 3 years for significant/systemic entities",
+          "TLPT scope agreed with competent authority — covers live production systems",
+          "Third-party testers must be approved by the competent authority",
+          "Testing results shared with supervisors; remediation timelines enforced",
+          "ICT third-party providers may be included in TLPT scope",
+        ]},
+      {n:"04",title:"Third-Party ICT Risk",art:"Art. 28–44",
+        desc:"Introduces direct EU-level oversight of Critical Third-Party Providers (CTPPs) designated by the Joint Committee of ESAs. Financial entities must conduct thorough due diligence and maintain contractual protections.",
+        items:[
+          "Register of all ICT third-party arrangements maintained and reported annually",
+          "Mandatory contractual clauses: audit rights, SLAs, sub-outsourcing controls, exit plans",
+          "Critical providers designated CTPPs face direct oversight by Lead Overseer (EBA/ESMA/EIOPA)",
+          "Financial entities retain full regulatory accountability — cannot delegate it to vendor",
+          "Exit strategies required: substitutability assessed before onboarding",
+          "Sub-outsourcing chains must be identified and contractually controlled",
+          "Cloud service providers, data centres, and AI model vendors all potentially in scope",
+        ]},
+      {n:"05",title:"ICT Information Sharing",art:"Art. 45",
+        desc:"Encourages voluntary sharing of cyber threat intelligence between financial entities to strengthen collective resilience across the sector.",
+        items:[
+          "Voluntary sharing of indicators of compromise, tactics, techniques and procedures (TTPs)",
+          "Sharing arrangements must be notified to competent authorities",
+          "Confidentiality and data protection obligations apply to all shared information",
+          "Participation does not create additional regulatory liability for sharing entities",
+        ]},
     ],
+    fines:{
+      entities:"Up to 2% of total annual worldwide turnover",
+      individuals:"Up to €1,000,000 per responsible natural person",
+      cttps:"Up to €5,000,000 per day of ongoing non-compliance (CTPPs)",
+      note:"Competent authorities may also impose temporary bans on management functions",
+    },
+    scope:"Banks (credit institutions) · Investment firms · Payment institutions · E-money institutions · Trading venues (MTFs, OTFs, regulated markets) · Central counterparties (CCPs) · Central securities depositories (CSDs) · Insurance undertakings · Crypto-asset service providers (CASPs) · Credit rating agencies · Data reporting service providers · Management companies",
+    competentAuth:"Germany: BaFin (Federal Financial Supervisory Authority) + ECB for significant credit institutions · European oversight: Joint Committee of EBA, ESMA, EIOPA",
   };
+
+  const AIACT_DATA = {
+    title:"EU Artificial Intelligence Act (EU AI Act)",
+    sub:"Regulation (EU) 2024/1689 · Published: 12 July 2024 · Phased application: August 2024 – August 2027",
+    color:C.deepBlue,
+    icon:"🤖",
+    overview:"The EU AI Act is the world's first comprehensive, binding legal framework for artificial intelligence. It adopts a risk-proportionate approach: AI systems are classified into four risk tiers, and obligations scale accordingly. For financial services, most AI systems in credit decisioning, fraud detection, and investment advisory are classified as high-risk — triggering extensive conformity, transparency, data governance, and human oversight requirements.",
+    whyItMatters:"Deutsche Bank deploys AI across credit scoring, AML surveillance, robo-advisory, and operational processes. Under the AI Act, each of these systems must be assessed for risk tier, registered in the EU AI database, and continuously monitored for accuracy, bias, and compliance. The management body is responsible for AI governance. August 2026 is the critical deadline: from that date, all high-risk AI systems in financial services must be fully compliant or face fines of up to 3% of global turnover.",
+    keyFacts:[
+      "High-risk AI in financial services must be compliant by August 2026",
+      "Credit scoring, AML detection, and investment advisory are all classified HIGH RISK under Annex III",
+      "Mandatory conformity assessment required before any high-risk AI system is deployed",
+      "All high-risk AI decisions must generate automatic, immutable audit logs (Art. 12)",
+      "Human-in-the-loop oversight measures are mandatory for all high-risk systems",
+      "Bias monitoring and demographic parity checks are required obligations",
+      "AI systems must be registered in the EU AI public database before deployment",
+    ],
+    timeline:[
+      {date:"Aug 2024",label:"Act in Force",desc:"Regulation enters into force. 24-month countdown begins."},
+      {date:"Feb 2025",label:"Prohibited Practices",desc:"Art. 5 prohibitions apply: social scoring, subliminal manipulation, real-time biometric ID banned."},
+      {date:"Aug 2025",label:"GPAI Rules",desc:"General Purpose AI model obligations (Art. 51-56) apply, including systemic-risk model requirements."},
+      {date:"Aug 2026",label:"⚠ HIGH RISK DEADLINE",desc:"High-risk AI system obligations (Art. 6, Annex III) fully apply. Financial services AI must be compliant.",highlight:true},
+      {date:"Aug 2027",label:"Full Application",desc:"Annex I high-risk systems and remaining provisions fully apply across all sectors."},
+    ],
+    pillars:[
+      {n:"01",title:"Prohibited AI Practices",art:"Art. 5",
+        desc:"A narrow set of AI applications posing unacceptable risks are outright prohibited across the EU, regardless of who develops or deploys them.",
+        items:[
+          "Social scoring of persons by public authorities based on behaviour",
+          "Real-time remote biometric identification in public spaces (narrow law enforcement exceptions)",
+          "Emotion recognition systems in workplace or educational settings",
+          "AI exploiting vulnerabilities of specific groups (age, disability, social situation)",
+          "Subliminal manipulation techniques bypassing conscious decision-making",
+          "Predictive policing based solely on profiling or personality traits",
+        ]},
+      {n:"02",title:"High-Risk AI Systems — Financial Services",art:"Art. 6, Annex III §5",
+        desc:"AI systems used in credit scoring, creditworthiness assessment, insurance risk pricing, AML transaction monitoring, and investment advisory are classified as high-risk and subject to the full compliance regime.",
+        items:[
+          "Conformity assessment (internal or third-party) before market placement (Art. 43)",
+          "Comprehensive risk management system documented and maintained (Art. 9)",
+          "Training, validation & test data governance — bias testing required (Art. 10)",
+          "Technical documentation: model architecture, performance metrics, limitations (Art. 11)",
+          "Automatic, immutable logging of all AI decisions and inputs (Art. 12)",
+          "Plain-language transparency documentation for deployers and users (Art. 13)",
+          "Human oversight: operators must be able to monitor, override, and halt the system (Art. 14)",
+          "Accuracy, robustness, and cybersecurity standards maintained throughout lifecycle (Art. 15)",
+          "Registration in EU AI public database before deployment (Art. 49)",
+          "Post-market monitoring plan required — continuous performance tracking (Art. 72)",
+        ]},
+      {n:"03",title:"Transparency & Interaction Disclosure",art:"Art. 50",
+        desc:"Specific AI systems interacting with natural persons, or generating synthetic content, must disclose their AI nature to ensure informed human decision-making.",
+        items:[
+          "Chatbots and conversational AI must clearly disclose they are AI-generated",
+          "Deepfake images, audio, and video must carry mandatory AI-generated label",
+          "Emotion recognition and biometric categorisation must notify subjects",
+          "AI-generated synthetic media used in news/media contexts must be marked",
+        ]},
+      {n:"04",title:"General Purpose AI (GPAI) Models",art:"Art. 51–56",
+        desc:"Foundation models and large language models are regulated at model level. Models exceeding 10²⁵ training FLOPs are designated systemic-risk models with enhanced obligations.",
+        items:[
+          "All GPAI providers: technical documentation, copyright compliance, training data summary",
+          "Systemic-risk models: mandatory adversarial testing (red-teaming) before release",
+          "Systemic-risk models: serious incident reporting to European Commission",
+          "Cybersecurity measures proportionate to systemic risk level",
+          "Model capabilities and limitations published in a standardised format",
+          "Downstream deployers must be informed of model capabilities and constraints",
+        ]},
+    ],
+    fines:{
+      prohibited:"Up to €35,000,000 or 7% of global annual turnover (whichever is higher)",
+      highrisk:"Up to €15,000,000 or 3% of global annual turnover (whichever is higher)",
+      misleading:"Up to €7,500,000 or 1.5% of global annual turnover (whichever is higher)",
+      note:"SME-specific caps apply; national supervisory authorities enforce",
+    },
+    scope:"AI system providers placing systems on the EU market · Deployers (operators) using AI systems in the EU · Providers and deployers established outside the EU where the AI output is used within the EU · Importers and distributors of AI systems",
+    competentAuth:"Germany: BaFin (for financial services AI) + Federal Office for AI (to be established) · EU-level: AI Office within the European Commission oversees GPAI models",
+  };
+
+  const d = isDora ? DORA_DATA : AIACT_DATA;
+
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(22,24,78,0.65)",zIndex:9000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={onClose}>
-      <div style={{background:C.bgCard,borderRadius:12,border:`2px solid ${d.color}`,width:"100%",maxWidth:680,maxHeight:"88vh",overflowY:"auto",boxShadow:"0 8px 40px rgba(22,24,78,0.3)"}} onClick={e=>e.stopPropagation()}>
-        <div style={{background:d.color,padding:"20px 24px",borderRadius:"10px 10px 0 0"}}>
-          <div style={{color:"rgba(255,255,255,0.55)",fontSize:9,fontFamily:"monospace",letterSpacing:2,marginBottom:4}}>REGULATORY FRAMEWORK</div>
-          <div style={{color:C.white,fontWeight:800,fontSize:18,marginBottom:4}}>{d.title}</div>
-          <div style={{color:"rgba(255,255,255,0.65)",fontSize:11,fontFamily:"monospace"}}>{d.sub}</div>
+    <div style={{position:"fixed",inset:0,background:"rgba(22,24,78,0.7)",zIndex:9000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={onClose}>
+      <div style={{background:C.bgCard,borderRadius:14,border:`2px solid ${d.color}`,width:"100%",maxWidth:780,maxHeight:"92vh",overflowY:"auto",boxShadow:"0 12px 60px rgba(22,24,78,0.4)"}} onClick={e=>e.stopPropagation()}>
+
+        {/* Modal header */}
+        <div style={{background:d.color,padding:"22px 28px",borderRadius:"12px 12px 0 0",position:"sticky",top:0,zIndex:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
+            <span style={{fontSize:24}}>{d.icon}</span>
+            <div>
+              <div style={{color:"rgba(255,255,255,0.5)",fontSize:9,fontFamily:"monospace",letterSpacing:2,marginBottom:3}}>EU REGULATORY FRAMEWORK</div>
+              <div style={{color:C.white,fontWeight:800,fontSize:19}}>{d.title}</div>
+            </div>
+            <button onClick={onClose} style={{marginLeft:"auto",background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.3)",color:C.white,borderRadius:6,padding:"6px 16px",fontSize:11,cursor:"pointer",fontWeight:700}}>✕ Close</button>
+          </div>
+          <div style={{color:"rgba(255,255,255,0.6)",fontSize:11,fontFamily:"monospace"}}>{d.sub}</div>
         </div>
-        <div style={{padding:24}}>
-          <p style={{color:C.text,fontSize:13,lineHeight:1.75,margin:"0 0 20px"}}>{d.summary}</p>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
-            {d.pillars.map((p,i)=>(
-              <div key={i} style={{background:C.bg,border:`1px solid ${C.border}`,borderTop:`3px solid ${d.color}`,borderRadius:8,padding:"14px 16px"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                  <div style={{width:28,height:28,borderRadius:5,background:d.color,color:C.white,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,fontFamily:"monospace",flexShrink:0}}>{p.n}</div>
-                  <div><div style={{color:C.text,fontWeight:700,fontSize:12}}>{p.title}</div><div style={{color:d.color,fontSize:10,fontFamily:"monospace"}}>{p.art}</div></div>
+
+        <div style={{padding:"24px 28px"}}>
+
+          {/* Overview */}
+          <div style={{background:C.bgMid,border:`1px solid ${C.border}`,borderRadius:8,padding:"16px 18px",marginBottom:18}}>
+            <div style={{color:d.color,fontSize:10,fontFamily:"monospace",fontWeight:700,letterSpacing:2,marginBottom:8}}>OVERVIEW</div>
+            <p style={{color:C.text,fontSize:13,lineHeight:1.8,margin:"0 0 12px"}}>{d.overview}</p>
+            <p style={{color:C.text,fontSize:13,lineHeight:1.8,margin:0,fontStyle:"italic",borderTop:`1px solid ${C.border}`,paddingTop:10}}>{d.whyItMatters}</p>
+          </div>
+
+          {/* Key facts */}
+          <div style={{marginBottom:18}}>
+            <div style={{color:d.color,fontSize:10,fontFamily:"monospace",fontWeight:700,letterSpacing:2,marginBottom:10}}>KEY FACTS AT A GLANCE</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+              {d.keyFacts.map((f,i)=>(
+                <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start",background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:6,padding:"9px 12px"}}>
+                  <div style={{width:22,height:22,borderRadius:"50%",background:d.color,color:C.white,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,flexShrink:0,marginTop:1}}>{i+1}</div>
+                  <span style={{color:C.text,fontSize:12,lineHeight:1.55}}>{f}</span>
                 </div>
-                {p.items.map((item,j)=><div key={j} style={{display:"flex",gap:6,fontSize:11,color:C.text,marginBottom:4}}><span style={{color:d.color,flexShrink:0}}>▸</span>{item}</div>)}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-          <div style={{padding:"10px 16px",background:C.bgMid,borderRadius:6,display:"flex",gap:12,alignItems:"center",marginBottom:16}}>
-            <span style={{color:C.muted,fontSize:10,fontFamily:"monospace",fontWeight:700}}>MAX FINE:</span>
-            <span style={{color:C.deepBlue,fontSize:12,fontWeight:700}}>{d.fines}</span>
+
+          {/* Timeline for AI Act */}
+          {!isDora && d.timeline && (
+            <div style={{marginBottom:18,background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:8,padding:"16px 18px"}}>
+              <div style={{color:d.color,fontSize:10,fontFamily:"monospace",fontWeight:700,letterSpacing:2,marginBottom:14}}>IMPLEMENTATION TIMELINE</div>
+              {d.timeline.map((t,i)=>(
+                <div key={i} style={{display:"flex",gap:14,alignItems:"flex-start",marginBottom:i<d.timeline.length-1?12:0,paddingBottom:i<d.timeline.length-1?12:0,borderBottom:i<d.timeline.length-1?`1px solid ${C.border}`:"none"}}>
+                  <div style={{minWidth:80,textAlign:"center"}}>
+                    <div style={{background:t.highlight?C.deepBlue:t.active?C.midBlue:C.bgMid,color:t.highlight||t.active?C.white:C.muted,borderRadius:5,padding:"4px 8px",fontSize:10,fontWeight:700,fontFamily:"monospace"}}>{t.date}</div>
+                  </div>
+                  <div style={{flex:1}}>
+                    <div style={{color:t.highlight?C.deepBlue:C.text,fontWeight:t.highlight?800:600,fontSize:12,marginBottom:3}}>{t.label}</div>
+                    <div style={{color:C.muted,fontSize:11,lineHeight:1.55}}>{t.desc}</div>
+                  </div>
+                  {t.highlight&&<span style={{background:C.deepBlue,color:C.white,fontSize:9,padding:"2px 8px",borderRadius:3,fontFamily:"monospace",fontWeight:700,flexShrink:0}}>IMMINENT</span>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pillars */}
+          <div style={{marginBottom:18}}>
+            <div style={{color:d.color,fontSize:10,fontFamily:"monospace",fontWeight:700,letterSpacing:2,marginBottom:12}}>{isDora?"FIVE REGULATORY PILLARS":"FOUR REGULATORY TIERS"}</div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {d.pillars.map((p,i)=>(
+                <div key={i} style={{background:C.bgCard,border:`1px solid ${C.border}`,borderLeft:`4px solid ${d.color}`,borderRadius:8,overflow:"hidden"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 16px",background:C.bgMid,cursor:"default"}}>
+                    <div style={{width:30,height:30,borderRadius:6,background:d.color,color:C.white,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,fontFamily:"monospace",flexShrink:0}}>{p.n}</div>
+                    <div style={{flex:1}}>
+                      <div style={{color:C.text,fontWeight:700,fontSize:13}}>{p.title}</div>
+                      <div style={{color:d.color,fontSize:10,fontFamily:"monospace"}}>{p.art}</div>
+                    </div>
+                  </div>
+                  <div style={{padding:"12px 16px"}}>
+                    <p style={{color:C.muted,fontSize:12,lineHeight:1.65,margin:"0 0 10px"}}>{p.desc}</p>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"5px 12px"}}>
+                      {p.items.map((item,j)=>(
+                        <div key={j} style={{display:"flex",gap:7,alignItems:"flex-start",fontSize:11,color:C.text,lineHeight:1.55}}>
+                          <span style={{color:d.color,fontWeight:700,flexShrink:0,marginTop:1}}>▸</span>{item}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
+
+          {/* Penalties */}
+          <div style={{background:C.deepBlue,borderRadius:8,padding:"16px 18px",marginBottom:16}}>
+            <div style={{color:"rgba(255,255,255,0.5)",fontSize:10,fontFamily:"monospace",fontWeight:700,letterSpacing:2,marginBottom:12}}>FINANCIAL PENALTIES</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+              {Object.entries(d.fines).filter(([k])=>k!=="note").map(([key,val])=>(
+                <div key={key} style={{background:"rgba(255,255,255,0.08)",borderRadius:6,padding:"10px 14px"}}>
+                  <div style={{color:"rgba(255,255,255,0.5)",fontSize:9,fontFamily:"monospace",textTransform:"uppercase",letterSpacing:1,marginBottom:5}}>{key.replace(/([A-Z])/g," $1").trim()}</div>
+                  <div style={{color:C.white,fontSize:11,fontWeight:600,lineHeight:1.5}}>{val}</div>
+                </div>
+              ))}
+            </div>
+            {d.fines.note&&<div style={{color:"rgba(255,255,255,0.55)",fontSize:11,fontStyle:"italic"}}>{d.fines.note}</div>}
+          </div>
+
+          {/* Scope & Authority */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
+            <div style={{background:C.bgMid,border:`1px solid ${C.border}`,borderRadius:8,padding:"14px 16px"}}>
+              <div style={{color:d.color,fontSize:10,fontFamily:"monospace",fontWeight:700,letterSpacing:2,marginBottom:8}}>SCOPE OF APPLICATION</div>
+              <p style={{color:C.text,fontSize:11,lineHeight:1.7,margin:0}}>{d.scope}</p>
+            </div>
+            <div style={{background:C.bgMid,border:`1px solid ${C.border}`,borderRadius:8,padding:"14px 16px"}}>
+              <div style={{color:d.color,fontSize:10,fontFamily:"monospace",fontWeight:700,letterSpacing:2,marginBottom:8}}>COMPETENT AUTHORITIES</div>
+              <p style={{color:C.text,fontSize:11,lineHeight:1.7,margin:0}}>{d.competentAuth}</p>
+            </div>
+          </div>
+
           <div style={{textAlign:"right"}}>
-            <button onClick={onClose} style={{background:d.color,color:C.white,border:"none",borderRadius:6,padding:"9px 24px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Close</button>
+            <button onClick={onClose} style={{background:d.color,color:C.white,border:"none",borderRadius:6,padding:"10px 28px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Close</button>
           </div>
         </div>
       </div>
@@ -839,10 +1064,7 @@ export default function ComplianceWorkstation(){
               <span style={{color:C.white,fontWeight:800,fontSize:13}}>RegSentinel</span>
             </div>
             <div style={{color:"rgba(255,255,255,0.45)",fontSize:9,fontFamily:"monospace",letterSpacing:2}}>COMPLIANCE WORKSTATION</div>
-            <div style={{marginTop:8,display:"flex",gap:5}}>
-              <Tag color={C.accentLight}>DORA</Tag>
-              <Tag color="rgba(255,255,255,0.6)">AI ACT</Tag>
-            </div>
+
           </div>
           <div style={{padding:"20px 0",flex:1}}>
             <div style={{padding:"0 20px",color:"rgba(255,255,255,0.4)",fontSize:9,fontFamily:"monospace",letterSpacing:2,marginBottom:12}}>INVESTIGATION STEPS</div>
@@ -886,9 +1108,15 @@ export default function ComplianceWorkstation(){
               <div style={{display:"flex",alignItems:"center",gap:10}}>
                 <div style={{textAlign:"right"}}>
                   <div style={{color:"rgba(255,255,255,0.4)",fontSize:9,fontFamily:"monospace",marginBottom:4}}>FRAMEWORKS</div>
-                  <div style={{display:"flex",gap:6}}>
-                    <span onClick={()=>setRegModal("dora")} title="View DORA regulation details" style={{background:"rgba(0,105,177,0.4)",border:"1px solid rgba(58,143,204,0.8)",color:C.white,fontSize:9,fontWeight:700,padding:"3px 10px",borderRadius:3,fontFamily:"monospace",letterSpacing:1,cursor:"pointer"}}>DORA ↗</span>
-                    <span onClick={()=>setRegModal("aiact")} title="View EU AI Act details" style={{background:"rgba(30,42,120,0.4)",border:"1px solid rgba(255,255,255,0.35)",color:C.white,fontSize:9,fontWeight:700,padding:"3px 10px",borderRadius:3,fontFamily:"monospace",letterSpacing:1,cursor:"pointer"}}>EU AI ACT ↗</span>
+                  <div style={{display:"flex",gap:8}}>
+                    <button onClick={()=>setRegModal("dora")} title="View DORA regulation details"
+                      style={{background:"#0069B1",border:"2px solid #3A8FCC",color:"#FFFFFF",fontSize:11,fontWeight:800,padding:"7px 18px",borderRadius:6,fontFamily:"monospace",letterSpacing:1,cursor:"pointer",boxShadow:"0 0 12px rgba(0,105,177,0.6)",transition:"all 0.15s",display:"flex",alignItems:"center",gap:5}}>
+                      <span style={{fontSize:13}}>🛡</span> DORA <span style={{fontSize:10,opacity:0.8}}>↗</span>
+                    </button>
+                    <button onClick={()=>setRegModal("aiact")} title="View EU AI Act details"
+                      style={{background:"#1E2A78",border:"2px solid rgba(255,255,255,0.5)",color:"#FFFFFF",fontSize:11,fontWeight:800,padding:"7px 18px",borderRadius:6,fontFamily:"monospace",letterSpacing:1,cursor:"pointer",boxShadow:"0 0 12px rgba(30,42,120,0.6)",transition:"all 0.15s",display:"flex",alignItems:"center",gap:5}}>
+                      <span style={{fontSize:13}}>🤖</span> EU AI ACT <span style={{fontSize:10,opacity:0.8}}>↗</span>
+                    </button>
                   </div>
                 </div>
                 <div style={{width:1,height:32,background:"rgba(255,255,255,0.15)"}}/>
