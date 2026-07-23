@@ -406,8 +406,8 @@ function Step1({onSelect}){
   }
   return (
     <div style={{maxWidth:640,margin:"0 auto",paddingTop:48}}>
-      <SLabel>Step 1 of 5 — Application Lookup</SLabel>
-      <h2 style={{color:C.text,fontSize:28,fontWeight:800,margin:"6px 0 8px"}}>Enter Application ID</h2>
+      <SLabel>NAR Portal — Application Lookup</SLabel>
+      <h2 style={{color:C.text,fontSize:28,fontWeight:800,margin:"6px 0 8px"}}>Search NAR Portal</h2>
       <p style={{color:C.muted,fontSize:13,marginBottom:32,lineHeight:1.6}}>Enter any DB Application ID in the format <strong style={{color:C.deepBlue}}>APP-XXXX</strong>. Registered apps load real data; any other valid ID generates a realistic mock profile for demonstration.</p>
       <div style={{display:"flex",gap:10,marginBottom:12}}>
         <input value={input} onChange={e=>{setInput(e.target.value.toUpperCase());setError("");}} onKeyDown={e=>e.key==="Enter"&&handleLookup()}
@@ -418,7 +418,7 @@ function Step1({onSelect}){
       </div>
       {error&&<div style={{color:C.accent,fontSize:12,fontFamily:"monospace",marginBottom:16}}>⚠ {error}</div>}
       <div style={{marginTop:28}}>
-        <div style={{color:C.muted,fontSize:10,fontFamily:"monospace",letterSpacing:2,marginBottom:12}}>SAMPLE APPLICATIONS (or type any APP-XXXX)</div>
+        <div style={{color:C.muted,fontSize:10,fontFamily:"monospace",letterSpacing:2,marginBottom:12}}>REGISTERED NAR PORTAL APPLICATIONS</div>
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
           {Object.values(APPLICATIONS).map(app=>(
             <button key={app.id} onClick={()=>handleLookup(app.id)}
@@ -550,12 +550,12 @@ function Step4({app,onSelect}){
   const stc={Resolved:C.midBlue,Open:C.accent,"In Progress":C.deepBlue};
   return (
     <div>
-      <SLabel>ServiceNow Incident Register</SLabel>
+      <SLabel>ServiceNow — Incident Register</SLabel>
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20}}>
-        <h3 style={{color:C.text,fontSize:18,fontWeight:700,margin:0}}>Incidents — {app.name}</h3>
+        <h3 style={{color:C.text,fontSize:18,fontWeight:700,margin:0}}>ServiceNow Incidents — {app.name}</h3>
         <Badge color={C.accent}>{app.incidents.filter(i=>i.severity==="P1").length} P1</Badge>
         <Badge color={C.midBlue}>{app.incidents.filter(i=>i.severity==="P2").length} P2</Badge>
-        <span style={{marginLeft:"auto",color:C.muted,fontSize:11}}>Click any incident to analyse against DORA & EU AI Act →</span>
+        <span style={{marginLeft:"auto",color:C.muted,fontSize:11}}>Select an incident to run DORA & EU AI Act regulatory analysis →</span>
       </div>
       <div style={{display:"flex",gap:14,marginBottom:14,padding:"8px 14px",background:C.bgMid,borderRadius:6,fontSize:11}}>
         <div style={{display:"flex",alignItems:"center",gap:5,color:C.muted}}><Badge color={C.midBlue}>DORA</Badge> DORA-reportable incident</div>
@@ -668,15 +668,35 @@ Given an application profile and a ServiceNow incident, produce a structured reg
 
       {analysis&&!loading&&(
         <div>
-          <Card style={{marginBottom:16,borderLeft:`4px solid ${oc[analysis.combinedRisk?.overallSeverity]||C.accent}`}}>
-            <SLabel>Executive Summary</SLabel>
-            <p style={{color:C.text,fontSize:13,lineHeight:1.8,margin:"0 0 12px"}}>{analysis.executiveSummary}</p>
-            <div style={{display:"flex",gap:10,alignItems:"center"}}>
-              <span style={{color:C.muted,fontSize:11}}>Overall Severity:</span>
-              <Badge color={oc[analysis.combinedRisk?.overallSeverity]||C.accent}>{analysis.combinedRisk?.overallSeverity}</Badge>
-              {analysis.combinedRisk?.overlapDetected&&<Badge color={C.accent}>⚡ DUAL-FRAMEWORK OVERLAP</Badge>}
+          {/* ── COMPLIANCE SUMMARY — structured readable points ── */}
+          <div style={{marginBottom:20,background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:10,overflow:"hidden"}}>
+            {/* Summary header bar */}
+            <div style={{background:C.deepBlue,padding:"14px 20px",display:"flex",alignItems:"center",gap:14}}>
+              <div style={{flex:1}}>
+                <div style={{color:"rgba(255,255,255,0.5)",fontSize:9,fontFamily:"monospace",letterSpacing:3,marginBottom:3}}>COMPLIANCE SUMMARY</div>
+                <div style={{color:C.white,fontWeight:800,fontSize:15}}>Regulatory Impact Assessment — {incident.id}</div>
+              </div>
+              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                <div style={{background:"rgba(255,255,255,0.12)",borderRadius:6,padding:"6px 14px",textAlign:"center"}}>
+                  <div style={{color:"rgba(255,255,255,0.5)",fontSize:8,fontFamily:"monospace",letterSpacing:1}}>SEVERITY</div>
+                  <div style={{color:C.white,fontWeight:800,fontSize:14}}>{analysis.combinedRisk?.overallSeverity||"—"}</div>
+                </div>
+                {analysis.combinedRisk?.overlapDetected&&(
+                  <div style={{background:"rgba(0,105,177,0.35)",border:"1px solid rgba(58,143,204,0.7)",borderRadius:6,padding:"6px 12px",color:C.white,fontSize:10,fontWeight:700,fontFamily:"monospace"}}>⚡ DUAL FRAMEWORK</div>
+                )}
+              </div>
             </div>
-          </Card>
+            {/* Key findings as bullet points */}
+            <div style={{padding:"18px 22px"}}>
+              <div style={{marginBottom:4,color:C.deepBlue,fontSize:10,fontFamily:"monospace",fontWeight:700,letterSpacing:2}}>KEY FINDINGS</div>
+              {analysis.executiveSummary && analysis.executiveSummary.split(/(?<=[.!?])\s+/).filter(s=>s.trim().length>10).map((point,i)=>(
+                <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"10px 0",borderBottom:i<analysis.executiveSummary.split(/(?<=[.!?])\s+/).filter(s=>s.trim().length>10).length-1?`1px solid ${C.border}`:"none"}}>
+                  <div style={{width:22,height:22,borderRadius:"50%",background:C.deepBlue,color:C.white,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,flexShrink:0,marginTop:1}}>{i+1}</div>
+                  <div style={{color:C.text,fontSize:13,lineHeight:1.65}}>{point.trim()}</div>
+                </div>
+              ))}
+            </div>
+          </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
             <Card accent={analysis.doraAnalysis?.inScope?C.midBlue:C.border}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
@@ -725,7 +745,12 @@ Given an application profile and a ServiceNow incident, produce a structured reg
                 <span style={{fontSize:18}}>⚡</span>
                 <div>
                   <div style={{color:C.accent,fontSize:10,fontFamily:"monospace",fontWeight:700,marginBottom:4}}>DUAL-FRAMEWORK INTERSECTION</div>
-                  <p style={{color:C.text,fontSize:12,lineHeight:1.7,margin:0}}>{analysis.combinedRisk.intersectionExplanation}</p>
+                  {analysis.combinedRisk.intersectionExplanation && analysis.combinedRisk.intersectionExplanation.split(/(?<=[.!?])\s+/).filter(s=>s.trim().length>8).map((pt,i)=>(
+                  <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:7}}>
+                    <span style={{color:C.accent,fontWeight:800,flexShrink:0}}>›</span>
+                    <span style={{color:C.text,fontSize:12,lineHeight:1.65}}>{pt.trim()}</span>
+                  </div>
+                ))}
                 </div>
               </div>
             </Card>
@@ -757,7 +782,12 @@ Given an application profile and a ServiceNow incident, produce a structured reg
             </Card>
             <Card accent={C.accent}>
               <SLabel color={C.accent}>Financial Exposure</SLabel>
-              <p style={{color:C.text,fontSize:12,lineHeight:1.8,margin:0}}>{analysis.potentialFinancialExposure}</p>
+              {analysis.potentialFinancialExposure && analysis.potentialFinancialExposure.split(/(?<=[.!?])\s+/).filter(s=>s.trim().length>8).map((pt,i)=>(
+                <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:8}}>
+                  <span style={{color:C.accent,fontWeight:800,flexShrink:0,fontSize:14,lineHeight:"1.4"}}>›</span>
+                  <span style={{color:C.text,fontSize:12,lineHeight:1.65}}>{pt.trim()}</span>
+                </div>
+              ))}
             </Card>
           </div>
         </div>
@@ -775,10 +805,10 @@ export default function ComplianceWorkstation(){
 
   const steps=[
     {n:0,label:"Regulations",done:false,active:true},
-    {n:1,label:"Application ID",done:!!app},
+    {n:1,label:"NAR Portal",done:!!app},
     {n:2,label:"App Details",done:!!app&&activeStep>2,active:!!app},
     {n:3,label:"WALTZ Flows",done:!!app&&activeStep>3,active:!!app},
-    {n:4,label:"Incidents",done:!!incident,active:!!app},
+    {n:4,label:"ServiceNow Incidents",done:!!incident,active:!!app},
     {n:5,label:"Reg Analysis",done:false,active:!!incident},
   ];
 
@@ -870,11 +900,11 @@ export default function ComplianceWorkstation(){
             </div>
             <div style={{padding:"0 28px",display:"flex",alignItems:"center",minHeight:36}}>
               <div style={{color:"rgba(255,255,255,0.35)",fontSize:10,fontFamily:"monospace"}}>
-                {["Regulations","App Lookup","App Details","WALTZ Flows","Incidents","Analysis"][activeStep]}
+                {["Regulations","NAR Portal","App Details","WALTZ Flows","ServiceNow Incidents","Reg Analysis"][activeStep]}
               </div>
               {app&&activeStep>=2&&activeStep<5&&(
                 <div style={{display:"flex",marginLeft:"auto"}}>
-                  {[{n:2,l:"Details"},{n:3,l:"WALTZ"},{n:4,l:"Incidents"}].map(t=>(
+                  {[{n:2,l:"Details"},{n:3,l:"WALTZ"},{n:4,l:"ServiceNow"}].map(t=>(
                     <button key={t.n} onClick={()=>setActiveStep(t.n)} style={{background:"transparent",border:"none",borderBottom:activeStep===t.n?`2px solid ${C.accentLight}`:"2px solid transparent",color:activeStep===t.n?C.white:"rgba(255,255,255,0.4)",padding:"8px 16px",fontSize:11,cursor:"pointer",fontFamily:"monospace",fontWeight:activeStep===t.n?700:400,transition:"all 0.15s"}}>{t.l}</button>
                   ))}
                 </div>
