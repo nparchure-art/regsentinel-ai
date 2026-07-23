@@ -1,25 +1,25 @@
 import { useState, useEffect, useRef } from "react";
 
-// ── DESIGN TOKENS ─────────────────────────────────────────────────────────────
+// ── DESIGN TOKENS — Light DB Blue Theme ──────────────────────────────────────
 const C = {
-  bg:       "#0B1120",
-  bgCard:   "#111827",
-  bgMid:    "#1A2438",
-  navy:     "#003E7E",
-  navyLight:"#0A4F9E",
-  gold:     "#C8922A",
-  goldLight:"#E5B84D",
-  teal:     "#00869A",
-  tealLight:"#00A8C0",
-  green:    "#2D8653",
-  red:      "#C0392B",
-  amber:    "#D4820A",
-  purple:   "#7C3AED",
+  bg:       "#EEF4FB",   // page background: cool blue-grey wash
+  bgCard:   "#FFFFFF",   // card surface: clean white
+  bgMid:    "#DAE8F5",   // subtle inner panels: muted blue
+  navy:     "#003E7E",   // DB primary navy
+  navyLight:"#0A4F9E",   // hover navy
+  gold:     "#B07D1F",   // DB gold — darkened for light bg contrast
+  goldLight:"#C8922A",   // gold accent
+  teal:     "#006B7A",   // teal — darkened for light bg
+  tealLight:"#00869A",
+  green:    "#1A6B3C",   // green — darkened for light bg
+  red:      "#B91C1C",   // red — darkened for light bg
+  amber:    "#B45309",   // amber — darkened for light bg
+  purple:   "#6D28D9",
   white:    "#FFFFFF",
-  offWhite: "#E8EEF7",
+  offWhite: "#F0F6FF",
   muted:    "#64748B",
-  border:   "#1E2D45",
-  text:     "#CBD5E1",
+  border:   "#BFCFE3",   // light blue-grey border
+  text:     "#1E3A5F",   // dark navy text — readable on white
 };
 
 // ── MOCK DATA ─────────────────────────────────────────────────────────────────
@@ -165,13 +165,61 @@ async function callClaude(system, user) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       model: "claude-sonnet-4-6",
-      max_tokens: 1000,
+      max_tokens: 4000,   // increased — regulatory analysis JSON is large
       system,
       messages: [{ role: "user", content: user }],
     }),
   });
   const data = await res.json();
   return data.content?.[0]?.text || "";
+}
+
+// Robust JSON extractor — handles fences, trailing truncation, and partial objects
+function extractJSON(raw) {
+  // Strip markdown fences
+  let text = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
+
+  // Try direct parse first
+  try { return JSON.parse(text); } catch (_) {}
+
+  // Find the outermost { … } block
+  const start = text.indexOf("{");
+  if (start === -1) throw new Error("No JSON object found in response");
+  let depth = 0, end = -1;
+  for (let i = start; i < text.length; i++) {
+    if (text[i] === "{") depth++;
+    else if (text[i] === "}") { depth--; if (depth === 0) { end = i; break; } }
+  }
+
+  // Complete object found
+  if (end !== -1) {
+    try { return JSON.parse(text.slice(start, end + 1)); } catch (_) {}
+  }
+
+  // Truncated — attempt surgical repair: close all open braces/arrays/strings
+  let fragment = text.slice(start);
+  // Remove dangling incomplete string value at the end
+  fragment = fragment.replace(/,?\s*"[^"]*$/, "");
+  // Count unclosed braces and arrays
+  let braces = 0, brackets = 0;
+  let inStr = false, escape = false;
+  for (const ch of fragment) {
+    if (escape) { escape = false; continue; }
+    if (ch === "\\" && inStr) { escape = true; continue; }
+    if (ch === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (ch === "{") braces++;
+    else if (ch === "}") braces--;
+    else if (ch === "[") brackets++;
+    else if (ch === "]") brackets--;
+  }
+  // Remove trailing comma before closing
+  fragment = fragment.replace(/,\s*$/, "");
+  // Close open arrays then objects
+  fragment += "]".repeat(Math.max(0, brackets)) + "}".repeat(Math.max(0, braces));
+  try { return JSON.parse(fragment); } catch (e) {
+    throw new Error("Could not parse response even after repair: " + e.message);
+  }
 }
 
 // ── SHARED UI ─────────────────────────────────────────────────────────────────
@@ -263,7 +311,7 @@ function Step1({ onSelect }) {
         <button
           onClick={() => handleLookup()}
           style={{
-            background: C.gold, color: C.bg, border: "none", borderRadius: 6,
+            background: C.navy, color: "#FFFFFF", border: "none", borderRadius: 6,
             padding: "12px 28px", fontSize: 13, fontWeight: 800, cursor: "pointer",
             fontFamily: "monospace", letterSpacing: 1, whiteSpace: "nowrap",
           }}
@@ -315,19 +363,19 @@ function Step2({ app }) {
   return (
     <div>
       {/* App header */}
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 16, marginBottom: 24, padding: "20px 24px", background: C.bgMid, borderRadius: 8, border: `1px solid ${C.navy}` }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 16, marginBottom: 24, padding: "20px 24px", background: C.navy, borderRadius: 8, border: `1px solid ${C.navy}` }}>
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
             <span style={{ color: C.gold, fontFamily: "monospace", fontSize: 13, fontWeight: 700 }}>{app.id}</span>
             <Badge color={C.red}>HIGH RISK AI</Badge>
             <Badge color={classColor}>{app.criticality}</Badge>
           </div>
-          <h2 style={{ color: C.white, fontSize: 22, fontWeight: 800, margin: "0 0 4px" }}>{app.name}</h2>
-          <div style={{ color: C.muted, fontSize: 12 }}>{app.owner} · {app.bu}</div>
+          <h2 style={{ color: "#FFFFFF", fontSize: 22, fontWeight: 800, margin: "0 0 4px" }}>{app.name}</h2>
+          <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 12 }}>{app.owner} · {app.bu}</div>
         </div>
         <div style={{ textAlign: "right" }}>
-          <div style={{ color: C.muted, fontSize: 10, fontFamily: "monospace" }}>AI ACT CLASSIFICATION</div>
-          <div style={{ color: C.red, fontWeight: 800, fontSize: 13, fontFamily: "monospace" }}>Annex III — High Risk</div>
+          <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 10, fontFamily: "monospace" }}>AI ACT CLASSIFICATION</div>
+          <div style={{ color: "#FCA5A5", fontWeight: 800, fontSize: 13, fontFamily: "monospace" }}>Annex III — High Risk</div>
         </div>
       </div>
 
@@ -432,9 +480,9 @@ function Step3({ app }) {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 40, gap: 4 }}>
-          <div style={{ background: C.navy, border: `2px solid ${C.gold}`, borderRadius: 8, padding: "14px 10px", textAlign: "center", minWidth: 120 }}>
-            <div style={{ color: C.gold, fontSize: 9, fontFamily: "monospace", fontWeight: 700, marginBottom: 4 }}>DB APP</div>
-            <div style={{ color: C.white, fontWeight: 800, fontSize: 11 }}>{app.id}</div>
+          <div style={{ background: C.navy, border: `2px solid ${C.goldLight}`, borderRadius: 8, padding: "14px 10px", textAlign: "center", minWidth: 120 }}>
+            <div style={{ color: C.goldLight, fontSize: 9, fontFamily: "monospace", fontWeight: 700, marginBottom: 4 }}>DB APP</div>
+            <div style={{ color: "#FFFFFF", fontWeight: 800, fontSize: 11 }}>{app.id}</div>
           </div>
           <div style={{ color: C.muted, fontSize: 18 }}>⬌</div>
         </div>
@@ -595,13 +643,12 @@ Provide a detailed DORA and EU AI Act regulatory analysis of this incident.`;
     callClaude(SYSTEM, userMsg)
       .then(raw => {
         try {
-          const json = JSON.parse(raw.replace(/```json|```/g, "").trim());
-          setAnalysis(json);
-        } catch {
-          setError("Analysis parsing failed. Raw: " + raw.slice(0, 200));
+          setAnalysis(extractJSON(raw));
+        } catch (e) {
+          setError("Analysis parsing failed — " + e.message + ". Raw snippet: " + raw.slice(0, 120));
         }
       })
-      .catch(() => setError("API call failed. Please retry."))
+      .catch(e => setError("API call failed: " + e.message + ". Please retry."))
       .finally(() => setLoading(false));
   }, [incident.id]);
 
@@ -811,31 +858,31 @@ export default function ComplianceWorkstation() {
       `}</style>
 
       {/* LEFT SIDEBAR — Case File Progress */}
-      <div style={{ width: 220, flexShrink: 0, background: C.bgCard, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", padding: "24px 0" }}>
+      <div style={{ width: 220, flexShrink: 0, background: C.navy, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", padding: "24px 0" }}>
         {/* Brand */}
-        <div style={{ padding: "0 20px 24px", borderBottom: `1px solid ${C.border}` }}>
+        <div style={{ padding: "0 20px 24px", borderBottom: "1px solid rgba(255,255,255,0.15)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <div style={{ background: C.gold, color: C.bg, fontWeight: 900, fontSize: 12, padding: "2px 7px", borderRadius: 3, fontFamily: "monospace" }}>db</div>
-            <span style={{ color: C.white, fontWeight: 800, fontSize: 13 }}>RegSentinel</span>
+            <div style={{ background: C.goldLight, color: C.navy, fontWeight: 900, fontSize: 12, padding: "2px 7px", borderRadius: 3, fontFamily: "monospace" }}>db</div>
+            <span style={{ color: "#FFFFFF", fontWeight: 800, fontSize: 13 }}>RegSentinel</span>
           </div>
-          <div style={{ color: C.muted, fontSize: 9, fontFamily: "monospace", letterSpacing: 2 }}>COMPLIANCE WORKSTATION</div>
+          <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 9, fontFamily: "monospace", letterSpacing: 2 }}>COMPLIANCE WORKSTATION</div>
           <div style={{ marginTop: 8, display: "flex", gap: 5 }}>
-            <Tag color={C.teal}>DORA</Tag>
-            <Tag color={C.gold}>AI ACT</Tag>
+            <Tag color={C.tealLight}>DORA</Tag>
+            <Tag color={C.goldLight}>AI ACT</Tag>
           </div>
         </div>
 
         {/* Case file steps */}
         <div style={{ padding: "20px 0", flex: 1 }}>
-          <div style={{ padding: "0 20px", color: C.muted, fontSize: 9, fontFamily: "monospace", letterSpacing: 2, marginBottom: 12 }}>INVESTIGATION STEPS</div>
+          <div style={{ padding: "0 20px", color: "rgba(255,255,255,0.45)", fontSize: 9, fontFamily: "monospace", letterSpacing: 2, marginBottom: 12 }}>INVESTIGATION STEPS</div>
           {steps.map((s, i) => (
             <div key={s.n}>
               <button
                 onClick={() => { if (s.active || s.done || s.n === 1) setActiveStep(s.n); }}
                 disabled={!s.active && !s.done && s.n !== 1}
                 style={{
-                  width: "100%", background: activeStep === s.n ? C.navy : "transparent",
-                  border: "none", borderRight: activeStep === s.n ? `3px solid ${C.gold}` : "3px solid transparent",
+                  width: "100%", background: activeStep === s.n ? "rgba(255,255,255,0.12)" : "transparent",
+                  border: "none", borderRight: activeStep === s.n ? `3px solid ${C.goldLight}` : "3px solid transparent",
                   padding: "10px 20px", cursor: (s.active || s.done || s.n === 1) ? "pointer" : "default",
                   display: "flex", alignItems: "center", gap: 12, transition: "all 0.15s",
                   textAlign: "left",
@@ -852,13 +899,13 @@ export default function ComplianceWorkstation() {
                   {s.done ? "✓" : s.n}
                 </div>
                 <div>
-                  <div style={{ color: activeStep === s.n ? C.white : s.done ? C.green : s.active ? C.text : C.muted, fontSize: 12, fontWeight: activeStep === s.n ? 700 : 400 }}>
+                  <div style={{ color: activeStep === s.n ? "#FFFFFF" : s.done ? "#6EE7B7" : s.active ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.35)", fontSize: 12, fontWeight: activeStep === s.n ? 700 : 400 }}>
                     {s.label}
                   </div>
                 </div>
               </button>
               {i < steps.length - 1 && (
-                <div style={{ width: 2, height: 8, background: s.done ? C.green : C.border, marginLeft: 32 }} />
+                <div style={{ width: 2, height: 8, background: s.done ? "#6EE7B7" : "rgba(255,255,255,0.15)", marginLeft: 32 }} />
               )}
             </div>
           ))}
@@ -866,14 +913,14 @@ export default function ComplianceWorkstation() {
 
         {/* Case file info */}
         {app && (
-          <div style={{ padding: "16px 20px", borderTop: `1px solid ${C.border}` }}>
-            <div style={{ color: C.muted, fontSize: 9, fontFamily: "monospace", letterSpacing: 2, marginBottom: 8 }}>ACTIVE CASE</div>
-            <div style={{ color: C.gold, fontFamily: "monospace", fontSize: 11, fontWeight: 700 }}>{app.id}</div>
-            <div style={{ color: C.text, fontSize: 11, marginBottom: 6 }}>{app.name}</div>
+          <div style={{ padding: "16px 20px", borderTop: "1px solid rgba(255,255,255,0.15)" }}>
+            <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 9, fontFamily: "monospace", letterSpacing: 2, marginBottom: 8 }}>ACTIVE CASE</div>
+            <div style={{ color: C.goldLight, fontFamily: "monospace", fontSize: 11, fontWeight: 700 }}>{app.id}</div>
+            <div style={{ color: "rgba(255,255,255,0.8)", fontSize: 11, marginBottom: 6 }}>{app.name}</div>
             {incident && (
               <>
-                <div style={{ color: C.muted, fontSize: 9, fontFamily: "monospace", letterSpacing: 2, margin: "8px 0 4px" }}>INCIDENT</div>
-                <div style={{ color: C.red, fontFamily: "monospace", fontSize: 10 }}>{incident.id}</div>
+                <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 9, fontFamily: "monospace", letterSpacing: 2, margin: "8px 0 4px" }}>INCIDENT</div>
+                <div style={{ color: "#FCA5A5", fontFamily: "monospace", fontSize: 10 }}>{incident.id}</div>
               </>
             )}
           </div>
@@ -883,7 +930,7 @@ export default function ComplianceWorkstation() {
         {app && (
           <div style={{ padding: "12px 20px", borderTop: `1px solid ${C.border}` }}>
             <button onClick={() => { setApp(null); setIncident(null); setActiveStep(1); }}
-              style={{ background: "transparent", border: `1px solid ${C.border}`, color: C.muted, borderRadius: 5, padding: "6px 12px", fontSize: 11, cursor: "pointer", width: "100%", fontFamily: "monospace" }}>
+              style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.25)", color: "rgba(255,255,255,0.5)", borderRadius: 5, padding: "6px 12px", fontSize: 11, cursor: "pointer", width: "100%", fontFamily: "monospace" }}>
               ← New Investigation
             </button>
           </div>
@@ -893,7 +940,7 @@ export default function ComplianceWorkstation() {
       {/* MAIN CONTENT */}
       <div style={{ flex: 1, overflow: "auto" }}>
         {/* Top bar */}
-        <div style={{ padding: "14px 28px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 12, background: C.bgCard, position: "sticky", top: 0, zIndex: 10 }}>
+        <div style={{ padding: "14px 28px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 12, background: C.bgCard, position: "sticky", top: 0, zIndex: 10, boxShadow: "0 1px 8px rgba(0,62,126,0.08)" }}>
           <div style={{ flex: 1 }}>
             <div style={{ color: C.muted, fontSize: 10, fontFamily: "monospace" }}>
               {["App Lookup", "Application Details", "WALTZ Data Flows", "Incident Register", "Regulatory Analysis"][activeStep - 1]}
